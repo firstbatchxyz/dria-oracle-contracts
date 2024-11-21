@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Vm} from "../lib/forge-std/src/Vm.sol";
-import {HelperTest} from "./HelperTest.sol";
-import {Upgrades} from "../lib/openzeppelin-foundry-upgrades/src/Upgrades.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {Helper} from "./Helper.t.sol";
+import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 
 import {LLMOracleTask, LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
@@ -11,7 +11,7 @@ import {LLMOracleCoordinator} from "../src/LLMOracleCoordinator.sol";
 
 import {WETH9} from "./WETH9.sol";
 
-contract LLMOracleCoordinatorTest is HelperTest {
+contract LLMOracleCoordinatorTest is Helper {
     address dummy = vm.addr(20);
     address requester = vm.addr(21);
 

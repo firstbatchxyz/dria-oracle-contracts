@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Vm} from "../lib/forge-std/src/Vm.sol";
-import {Upgrades} from "../lib/openzeppelin-foundry-upgrades/src/Upgrades.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
 
 import {WETH9} from "./WETH9.sol";
-import {HelperTest} from "./HelperTest.sol";
+import {Helper} from "./Helper.t.sol";
 
-contract LLMOracleRegistryTest is HelperTest {
+contract LLMOracleRegistryTest is Helper {
     uint256 totalStakeAmount;
     address oracle;
 

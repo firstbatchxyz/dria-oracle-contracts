@@ -1,66 +1,116 @@
-## Foundry
+# LLM Oracle
 
-**Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
+This document provides instructions for LLM contracts using Foundry.
 
-Foundry consists of:
+## Test
 
--   **Forge**: Ethereum testing framework (like Truffle, Hardhat and DappTools).
--   **Cast**: Swiss army knife for interacting with EVM smart contracts, sending transactions and getting chain data.
--   **Anvil**: Local Ethereum node, akin to Ganache, Hardhat Network.
--   **Chisel**: Fast, utilitarian, and verbose solidity REPL.
+Compile the contracts:
 
-## Documentation
-
-https://book.getfoundry.sh/
-
-## Usage
-
-### Build
-
-```shell
-$ forge build
+```sh
+make build
 ```
 
-### Test
+> [!NOTE]
+>
+> Please prepare a valid `.env` according to `.env.example` before running tests.
 
-```shell
-$ forge test
+Run tests on forked base-sepolia:
+
+```sh
+make test
 ```
 
-### Format
+## Coverage
 
-```shell
-$ forge fmt
+Check coverages with:
+
+```sh
+bash coverage.sh
 ```
 
-### Gas Snapshots
+You can see coverages under the coverage directory.
 
-```shell
-$ forge snapshot
+## Storage Layout
+
+Get storage layout with:
+
+```sh
+bash storage.sh
 ```
 
-### Anvil
+You can see storage layouts under the storage directory.
 
-```shell
-$ anvil
+## Deployment
+
+**Step 1.**
+Import your `PUBLIC_KEY` and `ETHERSCAN_API_KEY` to env file.
+
+> [!NOTE]
+>
+> Foundry expects the API key to be defined as `ETHERSCAN_API_KEY` even though you're using another explorer.
+
+**Step 2.**
+Create keystores for deployment. [See more for keystores](https://eips.ethereum.org/EIPS/eip-2335)
+
+```sh
+make local-key
 ```
 
-### Deploy
+or for Base Sepolia
 
-```shell
-$ forge script script/Counter.s.sol:CounterScript --rpc-url <your_rpc_url> --private-key <your_private_key>
+```sh
+make base-sepolia-key
 ```
 
-### Cast
+> [!NOTE]
+>
+> Recommended to create keystores on directly on your shell.
+> You HAVE to type your password on the terminal to be able to use your keys. (e.g when deploying a contract)
 
-```shell
-$ cast <subcommand>
+**Step 3.**
+Enter your private key (associated with the public key you added to env file) and password on terminal. You'll see your public key on terminal.
+
+> [!NOTE]
+>
+> If you want to deploy contracts on localhost please provide localhost public key for the command above.
+
+**Step 4.** Required only for local deployment.
+
+Start a local node with:
+
+```sh
+make anvil
 ```
 
-### Help
+**Step 5.**
+Deploy the contracts on localhost (forked Base Sepolia by default) using Deploy script:
 
-```shell
-$ forge --help
-$ anvil --help
-$ cast --help
+```sh
+make deploy
 ```
+
+or Base Sepolia with the command below:
+
+```sh
+make deploy base-sepolia
+```
+
+You can see deployed contract addresses under the `deployment/<chainid>.json`
+
+## Gas Snapshot
+
+Take the gas snapshot with:
+
+```sh
+make snapshot
+```
+
+You can see the snapshot `.gas-snapshot` file in the current directory.
+
+## Generate documentation
+
+```sh
+make doc
+```
+
+You can see the documentation under the `docs/` directory.

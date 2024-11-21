@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Vm} from "../lib/forge-std/src/Vm.sol";
-import {Upgrades} from "../lib/openzeppelin-foundry-upgrades/src/Upgrades.sol";
-import {Test, console} from "../lib/forge-std/src/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {Test} from "forge-std/Test.sol";
 
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
 import {LLMOracleCoordinator} from "../src/LLMOracleCoordinator.sol";
@@ -11,7 +11,7 @@ import {LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 
 import {WETH9} from "./WETH9.sol";
 
-abstract contract HelperTest is Test {
+abstract contract Helper is Test {
     struct Stakes {
         uint256 generatorStakeAmount;
         uint256 validatorStakeAmount;
@@ -156,7 +156,7 @@ abstract contract HelperTest is Test {
         (address requester,,,,,,,,) = oracleCoordinator.requests(taskId);
         uint256 target = type(uint256).max >> oracleParameters.difficulty;
 
-        uint nonce = 0;
+        uint256 nonce = 0;
         for (; nonce < type(uint256).max; nonce++) {
             bytes memory message = abi.encodePacked(taskId, input, requester, responder, nonce);
             uint256 digest = uint256(keccak256(message));
@@ -209,5 +209,4 @@ abstract contract HelperTest is Test {
         vm.prank(validator);
         oracleCoordinator.validate(taskId, nonce, scores, metadata);
     }
-
 }
