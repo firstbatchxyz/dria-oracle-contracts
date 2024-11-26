@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.20;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
@@ -144,6 +144,6 @@ contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
 
     /// @notice Check if an Oracle is registered.
     function isRegistered(address user, LLMOracleKind kind) public view returns (bool) {
-        return registrations[user][kind] != 0;
+        return registrations[user][kind] >= getStakeAmount(kind);
     }
 }
