@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.20;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-
 import {LLMOracleTaskParameters} from "./LLMOracleTask.sol";
 
 /// @title LLM Oracle Manager

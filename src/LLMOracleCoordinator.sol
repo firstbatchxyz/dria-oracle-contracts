@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.20;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -81,6 +81,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
     /// @notice Reverts if `msg.sender` is not a registered oracle.
     modifier onlyRegistered(LLMOracleKind kind) {
         if (!registry.isRegistered(msg.sender, kind)) {
+            // when the oracle is not registered or he didn't stake enough funds
             revert NotRegistered(msg.sender);
         }
         _;
@@ -341,7 +342,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
             uint256 innerCount = 0;
             for (uint256 v_i = 0; v_i < task.parameters.numValidations; ++v_i) {
                 uint256 score = scores[v_i];
-                if ((score >= _mean - _stddev) && (score <= _mean + _stddev)) {
+                if ((score + _stddev >= _mean) && (score <= _mean + _stddev)) {
                     innerSum += score;
                     innerCount++;
 
@@ -366,7 +367,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         (uint256 stddev, uint256 mean) = Statistics.stddev(generationScores);
         for (uint256 g_i = 0; g_i < task.parameters.numGenerations; g_i++) {
             // ignore lower outliers
-            if (generationScores[g_i] >= mean - generationDeviationFactor * stddev) {
+            if (generationScores[g_i] + generationDeviationFactor * stddev >= mean) {
                 _increaseAllowance(responses[taskId][g_i].responder, task.generatorFee);
             }
         }
