@@ -271,6 +271,13 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
             revert InvalidValidation(taskId, msg.sender);
         }
 
+        // ensure scores are within the range
+        for (uint256 i = 0; i < scores.length; i++) {
+            if (scores[i] > maximumParameters.score || scores[i] < minimumParameters.score) {
+                revert InvalidParameterRange(scores[i], minimumParameters.score, maximumParameters.score);
+            }
+        }
+
         // ensure validator did not participate in generation
         for (uint256 i = 0; i < task.parameters.numGenerations; i++) {
             if (responses[taskId][i].responder == msg.sender) {

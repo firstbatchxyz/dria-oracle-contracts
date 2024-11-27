@@ -174,7 +174,7 @@ contract LLMOracleCoordinatorTest is Helper {
         }
 
         // set scores
-        scores = [1 ether, 1 ether];
+        scores = [1, 5];
 
         uint256 genNonce = mineNonce(generators[2], 1);
         // ensure third generator can't respond after completion
@@ -208,7 +208,7 @@ contract LLMOracleCoordinatorTest is Helper {
         // should see generation scores
         for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
             (,, uint256 responseScore,,) = oracleCoordinator.responses(1, i);
-            assertEq(responseScore, 1 ether);
+            assertEq(responseScore, scores[i]);
         }
     }
 
@@ -231,7 +231,7 @@ contract LLMOracleCoordinatorTest is Helper {
         }
 
         // set scores for (setOracleParameters(1, 1, 1))
-        scores = [1 ether];
+        scores = [30];
 
         // try to validate after responding as generator
         uint256 nonce = mineNonce(generators[0], 1);

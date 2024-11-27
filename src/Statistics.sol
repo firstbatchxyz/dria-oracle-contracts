@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.20;
+
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
 /// @notice Simple statistic library for uint256 arrays, numbers are treat as fixed-precision floats.
 library Statistics {
@@ -10,7 +13,8 @@ library Statistics {
         for (uint256 i = 0; i < data.length; i++) {
             sum += data[i];
         }
-        ans = sum / data.length;
+        // sum * 1 / data.length 
+        ans = Math.mulDiv(sum, 1, data.length);
     }
 
     /// @notice Compute the variance of the data.
@@ -19,10 +23,11 @@ library Statistics {
         mean = avg(data);
         uint256 sum = 0;
         for (uint256 i = 0; i < data.length; i++) {
-            uint256 diff = data[i] - mean;
-            sum += diff * diff;
+            int256 diff = int256(data[i]) - int256(mean);
+            // abs return the result as uint256
+            sum += SignedMath.abs(diff * diff);
         }
-        ans = sum / data.length;
+        ans = Math.mulDiv(sum, 1, data.length);
     }
 
     /// @notice Compute the standard deviation of the data.
@@ -31,18 +36,6 @@ library Statistics {
     function stddev(uint256[] memory data) internal pure returns (uint256 ans, uint256 mean) {
         (uint256 _variance, uint256 _mean) = variance(data);
         mean = _mean;
-        ans = sqrt(_variance);
-    }
-
-    /// @notice Compute the square root of a number.
-    /// @dev Uses Babylonian method.
-    /// @param x The number to compute the square root for.
-    function sqrt(uint256 x) internal pure returns (uint256 y) {
-        uint256 z = (x + 1) / 2;
-        y = x;
-        while (z < y) {
-            y = z;
-            z = (x / z + z) / 2;
-        }
+        ans = Math.sqrt(_variance);
     }
 }

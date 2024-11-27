@@ -53,7 +53,7 @@ abstract contract Helper is Test {
     uint256 amountPerRound = 0.015 ether;
     uint96 royaltyFee = 2;
 
-    uint256[] scores = [1 ether, 1 ether, 1 ether];
+    uint256[] scores = [1, 1, 1];
 
     /// @notice The given nonce is not a valid proof-of-work.
     error InvalidNonceFromHelperTest(uint256 taskId, uint256 nonce, uint256 computedNonce, address caller);
@@ -63,7 +63,7 @@ abstract contract Helper is Test {
         validators = [vm.addr(2), vm.addr(3), vm.addr(4)];
         generators = [vm.addr(5), vm.addr(6), vm.addr(7)];
 
-        oracleParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 1});
+        oracleParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 1, score: 0});
 
         stakes = Stakes({generatorStakeAmount: 0.01 ether, validatorStakeAmount: 0.01 ether});
         fees = Fees({platformFee: 0.0001 ether, generationFee: 0.0002 ether, validationFee: 0.00003 ether});

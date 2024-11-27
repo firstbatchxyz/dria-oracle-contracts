@@ -48,11 +48,11 @@ contract LLMOracleManager is OwnableUpgradeable {
         internal
         onlyInitializing
     {
-        minimumParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 0});
-        maximumParameters = LLMOracleTaskParameters({difficulty: 10, numGenerations: 10, numValidations: 10});
-
-        validationDeviationFactor = 2;
         generationDeviationFactor = 1;
+
+        minimumParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 0, score: 0});
+        maximumParameters =
+            LLMOracleTaskParameters({difficulty: 10, numGenerations: 10, numValidations: 10, score: type(uint8).max});
 
         setFees(_platformFee, _generationFee, _validationFee);
     }
