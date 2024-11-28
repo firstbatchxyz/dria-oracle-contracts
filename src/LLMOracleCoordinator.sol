@@ -8,10 +8,11 @@ import {LLMOracleRegistry, LLMOracleKind} from "./LLMOracleRegistry.sol";
 import {LLMOracleTask, LLMOracleTaskParameters} from "./LLMOracleTask.sol";
 import {LLMOracleManager} from "./LLMOracleManager.sol";
 import {Statistics} from "./Statistics.sol";
+import {Whitelist} from "./Whitelist.sol";
 
 /// @title LLM Oracle Coordinator
 /// @notice Responsible for coordinating the Oracle responses to LLM generation requests.
-contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeable {
+contract LLMOracleCoordinator is Whitelist, LLMOracleTask, LLMOracleManager, UUPSUpgradeable {
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -261,6 +262,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
     /// @param metadata Optional metadata for this validation.
     function validate(uint256 taskId, uint256 nonce, uint256[] calldata scores, bytes calldata metadata)
         public
+        isWhiteListed(msg.sender)
         onlyRegistered(LLMOracleKind.Validator)
         onlyAtStatus(taskId, TaskStatus.PendingValidation)
     {

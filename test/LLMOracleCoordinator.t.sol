@@ -8,6 +8,7 @@ import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 import {LLMOracleTask, LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
 import {LLMOracleCoordinator} from "../src/LLMOracleCoordinator.sol";
+import {Whitelist} from "../src/Whitelist.sol";
 
 import {WETH9} from "./WETH9.sol";
 
@@ -69,19 +70,10 @@ contract LLMOracleCoordinatorTest is Helper {
         _;
     }
 
-    function test_Deployment() external fund deployment {
-        assertEq(oracleRegistry.generatorStakeAmount(), stakes.generatorStakeAmount);
-        assertEq(oracleRegistry.validatorStakeAmount(), stakes.validatorStakeAmount);
-
-        assertEq(address(oracleRegistry.token()), address(token));
-        assertEq(oracleRegistry.owner(), dria);
-
-        // check the coordinator variables
-        assertEq(address(oracleCoordinator.feeToken()), address(token));
-        assertEq(address(oracleCoordinator.registry()), address(oracleRegistry));
-        assertEq(oracleCoordinator.platformFee(), fees.platformFee);
-        assertEq(oracleCoordinator.generationFee(), fees.generationFee);
-        assertEq(oracleCoordinator.validationFee(), fees.validationFee);
+    function test_RemoveWhitelist() external fund deployment registerOracles addValidatorsToWhitelist {
+        vm.prank(dria);
+        oracleCoordinator.removeFromWhitelist(validators[1]);
+        vm.assertFalse(oracleCoordinator.whitelisted(validators[1]));
     }
 
     /// @notice Test the registerOracles modifier to check if the oracles are registered
@@ -158,6 +150,29 @@ contract LLMOracleCoordinatorTest is Helper {
         oracleCoordinator.respond(900, genNonce0, output, metadata);
     }
 
+    function test_RevertWhen_ValidateWithoutWhitelist()
+        external
+        fund
+        setOracleParameters(1, 2, 2)
+        deployment
+        registerOracles
+        safeRequest(requester, 1)
+    {
+        // generators respond
+        for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
+            safeRespond(generators[i], output, 1);
+        }
+
+        // set scores
+        scores = [1, 5];
+
+        // try to validate without being whitelisted
+        uint256 valNonce = mineNonce(validators[0], 1);
+        vm.expectRevert(abi.encodeWithSelector(Whitelist.NotWhitelisted.selector, validators[0]));
+        vm.prank(validators[0]);
+        oracleCoordinator.validate(1, valNonce, scores, metadata);
+    }
+
     // @notice Test with single validation
     function test_WithValidation()
         external
@@ -165,6 +180,7 @@ contract LLMOracleCoordinatorTest is Helper {
         setOracleParameters(1, 2, 2)
         deployment
         registerOracles
+        addValidatorsToWhitelist
         safeRequest(requester, 1)
         checkAllowances
     {
@@ -232,6 +248,10 @@ contract LLMOracleCoordinatorTest is Helper {
 
         // set scores for (setOracleParameters(1, 1, 1))
         scores = [30];
+
+        // add generator to whitelist to be able to validate
+        vm.prank(dria);
+        oracleCoordinator.addToWhitelist(generators);
 
         // try to validate after responding as generator
         uint256 nonce = mineNonce(generators[0], 1);

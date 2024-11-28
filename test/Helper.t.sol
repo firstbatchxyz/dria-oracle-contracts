@@ -11,24 +11,29 @@ import {LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 
 import {WETH9} from "./WETH9.sol";
 
+import {Stakes, Fees} from "../script/HelperConfig.s.sol";
+
+// TODO:
+/// @notice Created for tests to reduce code duplication
 abstract contract Helper is Test {
-    struct Stakes {
-        uint256 generatorStakeAmount;
-        uint256 validatorStakeAmount;
-    }
-
-    struct Fees {
-        uint256 platformFee;
-        uint256 generationFee;
-        uint256 validationFee;
-    }
-
+    /// @notice Parameters for the buyer agent deployment
     struct BuyerAgentParameters {
         string name;
         string description;
         uint96 royaltyFee;
         uint256 amountPerRound;
     }
+
+    /*//////////////////////////////////////////////////////////////
+                             ERRORS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice The given nonce is not a valid proof-of-work.
+    error InvalidNonceFromHelperTest(uint256 taskId, uint256 nonce, uint256 computedNonce, address caller);
+
+    /*//////////////////////////////////////////////////////////////
+                             STORAGE
+    //////////////////////////////////////////////////////////////*/
 
     bytes32 public constant ORACLE_PROTOCOL = "test/0.0.1";
 
@@ -55,10 +60,8 @@ abstract contract Helper is Test {
 
     uint256[] scores = [1, 1, 1];
 
-    /// @notice The given nonce is not a valid proof-of-work.
-    error InvalidNonceFromHelperTest(uint256 taskId, uint256 nonce, uint256 computedNonce, address caller);
-
     function setUp() public {
+        // define parameters
         dria = vm.addr(1);
         validators = [vm.addr(2), vm.addr(3), vm.addr(4)];
         generators = [vm.addr(5), vm.addr(6), vm.addr(7)];
@@ -71,35 +74,57 @@ abstract contract Helper is Test {
         vm.label(dria, "Dria");
     }
 
+    /*//////////////////////////////////////////////////////////////
+                             MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Add validators to the whitelist.
+    modifier addValidatorsToWhitelist() {
+        vm.prank(dria);
+        oracleCoordinator.addToWhitelist(validators);
+
+        for (uint256 i; i < validators.length; i++) {
+            vm.assertTrue(oracleCoordinator.whitelisted(validators[i]));
+        }
+        _;
+    }
+
+    /// @notice Register the oracles & label them like Generator#1, Validator#1, etc.
+    /// @dev Used in coordinator tests
     modifier registerOracles() {
         for (uint256 i = 0; i < generators.length; i++) {
-            // Approve the stake for the generator
+            // approve the generatorStakeAmount for the generator
             vm.startPrank(generators[i]);
             token.approve(address(oracleRegistry), stakes.generatorStakeAmount + stakes.validatorStakeAmount);
 
-            // Register the generator oracle
+            // register the generator oracle
             oracleRegistry.register(LLMOracleKind.Generator);
             vm.stopPrank();
 
+            // check if the generator is registered
             assertTrue(oracleRegistry.isRegistered(generators[i], LLMOracleKind.Generator));
+            // label generator address
             vm.label(generators[i], string.concat("Generator#", vm.toString(i + 1)));
         }
 
         for (uint256 i = 0; i < validators.length; i++) {
-            // Approve the stake for the validator
+            // approve the validatorStakeAmount for the validator
             vm.startPrank(validators[i]);
             token.approve(address(oracleRegistry), stakes.validatorStakeAmount);
 
-            // Register the validator oracle
+            // register the validator oracle
             oracleRegistry.register(LLMOracleKind.Validator);
             vm.stopPrank();
 
+            // check if the validator is registered & label validator address
             assertTrue(oracleRegistry.isRegistered(validators[i], LLMOracleKind.Validator));
             vm.label(validators[i], string.concat("Validator#", vm.toString(i + 1)));
         }
         _;
     }
 
+    /// @notice Set oracle parameters
+    /// @dev Used in coordinator tests
     modifier setOracleParameters(uint8 _difficulty, uint40 _numGenerations, uint40 _numValidations) {
         oracleParameters.difficulty = _difficulty;
         oracleParameters.numGenerations = _numGenerations;
@@ -111,8 +136,8 @@ abstract contract Helper is Test {
         _;
     }
 
-    // check generator and validator allowances before and after function execution
-    // used in coordinator test
+    /// @notice Check generator and validator allowances before and after function execution
+    /// @dev Used coordinator tests (Only for non-revert functions)
     modifier checkAllowances() {
         uint256[] memory generatorAllowancesBefore = new uint256[](oracleParameters.numGenerations);
         uint256[] memory validatorAllowancesBefore;
@@ -122,7 +147,7 @@ abstract contract Helper is Test {
             generatorAllowancesBefore[i] = token.allowance(address(oracleCoordinator), generators[i]);
         }
 
-        // numValidations is greater than 0
+        // if numValidations is greater than 0 get the initial validator allowances to check the differences after function execution
         if (oracleParameters.numValidations > 0) {
             validatorAllowancesBefore = new uint256[](oracleParameters.numValidations);
             for (uint256 i = 0; i < oracleParameters.numValidations; i++) {
@@ -142,7 +167,7 @@ abstract contract Helper is Test {
             _;
         }
 
-        // validate generator allowances after function execution
+        // check generator allowances after function execution
         for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
             uint256 allowanceAfter = token.allowance(address(oracleCoordinator), generators[i]);
             (,,,, uint256 expectedIncrease,,,,) = oracleCoordinator.requests(1);
@@ -150,34 +175,19 @@ abstract contract Helper is Test {
         }
     }
 
-    // Mines a valid nonce until the hash meets the difficulty target
-    function mineNonce(address responder, uint256 taskId) internal view returns (uint256) {
-        // get the task
-        (address requester,,,,,,,,) = oracleCoordinator.requests(taskId);
-        uint256 target = type(uint256).max >> oracleParameters.difficulty;
-
-        uint256 nonce = 0;
-        for (; nonce < type(uint256).max; nonce++) {
-            bytes memory message = abi.encodePacked(taskId, input, requester, responder, nonce);
-            uint256 digest = uint256(keccak256(message));
-
-            if (uint256(digest) < target) {
-                break;
-            }
-        }
-
-        return nonce;
-    }
-
+    /// @notice Make a request to the oracle coordinator
+    /// @dev Used in coordinator tests
     modifier safeRequest(address requester, uint256 taskId) {
         (uint256 _total, uint256 _generator, uint256 _validator) = oracleCoordinator.getFee(oracleParameters);
 
-        vm.startPrank(requester); // simulate transaction from requester
+        vm.startPrank(requester);
+        // approve coordinator
         token.approve(address(oracleCoordinator), _total);
+        // make a request
         oracleCoordinator.request(ORACLE_PROTOCOL, input, models, oracleParameters);
         vm.stopPrank();
 
-        // check request params
+        // check the request is valid
         (
             address _requester,
             ,
@@ -198,12 +208,46 @@ abstract contract Helper is Test {
         _;
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                 FUNCTIONS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice Mines a valid nonce until the hash meets the difficulty target
+    /// @param responder The responder address
+    /// @param taskId The task id
+    /// @return nonce The valid nonce
+    /// @dev Used in coordinator tests
+    function mineNonce(address responder, uint256 taskId) internal view returns (uint256) {
+        // get the task
+        (address requester,,,,,,,,) = oracleCoordinator.requests(taskId);
+        uint256 target = type(uint256).max >> oracleParameters.difficulty;
+
+        uint256 nonce = 0;
+        for (; nonce < type(uint256).max; nonce++) {
+            bytes memory message = abi.encodePacked(taskId, input, requester, responder, nonce);
+            uint256 digest = uint256(keccak256(message));
+
+            if (uint256(digest) < target) {
+                break;
+            }
+        }
+
+        return nonce;
+    }
+
+    /// @notice Respond to a task
+    /// @param responder The responder address
+    /// @param output The output data
+    /// @param taskId The task id
     function safeRespond(address responder, bytes memory output, uint256 taskId) internal {
         uint256 nonce = mineNonce(responder, taskId);
         vm.prank(responder);
         oracleCoordinator.respond(taskId, nonce, output, metadata);
     }
 
+    /// @notice Validate a task
+    /// @param validator The validator address
+    /// @param taskId The task id
     function safeValidate(address validator, uint256 taskId) internal {
         uint256 nonce = mineNonce(validator, taskId);
         vm.prank(validator);

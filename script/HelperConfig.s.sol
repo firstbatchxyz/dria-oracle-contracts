@@ -12,8 +12,8 @@ struct Stakes {
 
 struct Fees {
     uint256 platformFee;
-    uint256 generatorFee;
-    uint256 validatorFee;
+    uint256 generationFee;
+    uint256 validationFee;
 }
 
 contract HelperConfig is Script {
@@ -26,7 +26,7 @@ contract HelperConfig is Script {
     constructor() {
         // set deployment parameters
         stakes = Stakes({generatorStakeAmount: 0.0001 ether, validatorStakeAmount: 0.000001 ether});
-        fees = Fees({platformFee: 0.0001 ether, generatorFee: 0.0001 ether, validatorFee: 0.0001 ether});
+        fees = Fees({platformFee: 0.0001 ether, generationFee: 0.0001 ether, validationFee: 0.0001 ether});
         taskParams = LLMOracleTaskParameters({difficulty: 2, numGenerations: 1, numValidations: 1, score: 0});
 
         // for base sepolia

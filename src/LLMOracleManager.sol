@@ -8,7 +8,7 @@ import {LLMOracleTaskParameters} from "./LLMOracleTask.sol";
 /// @notice Holds the configuration for the LLM Oracle, such as allowed bounds on difficulty,
 /// number of generations & validations, and fee settings.
 
-contract LLMOracleManager is OwnableUpgradeable {
+abstract contract LLMOracleManager is OwnableUpgradeable {
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -50,7 +50,7 @@ contract LLMOracleManager is OwnableUpgradeable {
     {
         generationDeviationFactor = 1;
 
-        minimumParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 0, score: 0});
+        minimumParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 0, score: 1});
         maximumParameters =
             LLMOracleTaskParameters({difficulty: 10, numGenerations: 10, numValidations: 10, score: type(uint8).max});
 
