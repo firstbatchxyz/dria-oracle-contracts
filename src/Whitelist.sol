@@ -8,14 +8,17 @@ abstract contract Whitelist is OwnableUpgradeable {
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
+    /// @notice Added address to whitelist
     event AddedToWhitelist(address indexed account);
+
+    /// @notice Removed address from whitelist
     event RemovedFromWhitelist(address indexed account);
 
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
+
     /// @notice Error to be thrown when a non-whitelisted address tries to access a function.
-    /// @dev Used in the isWhiteListed modifier.
     error NotWhitelisted(address validator);
 
     /*//////////////////////////////////////////////////////////////
@@ -56,7 +59,7 @@ abstract contract Whitelist is OwnableUpgradeable {
 
     /// @notice Remove validator from whitelist
     /// @param account The address to be removed from the whitelist.
-    function removeFromWhitelist(address account) external onlyOwner {
+    function removeFromWhitelist(address account) public onlyOwner {
         if (whitelisted[account]) {
             whitelisted[account] = false;
             emit RemovedFromWhitelist(account);

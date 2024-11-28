@@ -49,8 +49,13 @@ contract LLMOracleRegistryTest is Helper {
         _;
     }
 
-    // move to helper ?
     modifier registerOracle(LLMOracleKind kind) {
+        if (kind == LLMOracleKind.Validator) {
+            // add generators to whitelist
+            vm.prank(dria);
+            oracleRegistry.addToWhitelist(generators);
+        }
+
         // register oracle
         vm.startPrank(oracle);
         token.approve(address(oracleRegistry), totalStakeAmount);
@@ -61,7 +66,6 @@ contract LLMOracleRegistryTest is Helper {
         _;
     }
 
-    // move to helper ?
     modifier unregisterOracle(LLMOracleKind kind) {
         // Simulate the oracle account
         vm.startPrank(oracle);
@@ -79,6 +83,12 @@ contract LLMOracleRegistryTest is Helper {
 
         assertEq(address(oracleRegistry.token()), address(token));
         assertEq(oracleRegistry.owner(), dria);
+    }
+
+    function test_RemoveFromWhitelist() external deployment fund registerOracle(LLMOracleKind.Validator) {
+        vm.prank(dria);
+        oracleRegistry.removeFromWhitelist(validators[1]);
+        vm.assertFalse(oracleRegistry.whitelisted(validators[1]));
     }
 
     /// @notice Registry has not approved by oracle
@@ -141,6 +151,7 @@ contract LLMOracleRegistryTest is Helper {
         external
         deployment
         fund
+        addValidatorsToWhitelist
         registerOracle(LLMOracleKind.Generator)
         registerOracle(LLMOracleKind.Validator)
         unregisterOracle(LLMOracleKind.Generator)

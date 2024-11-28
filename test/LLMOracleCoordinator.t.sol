@@ -70,12 +70,6 @@ contract LLMOracleCoordinatorTest is Helper {
         _;
     }
 
-    function test_RemoveWhitelist() external fund deployment registerOracles addValidatorsToWhitelist {
-        vm.prank(dria);
-        oracleCoordinator.removeFromWhitelist(validators[1]);
-        vm.assertFalse(oracleCoordinator.whitelisted(validators[1]));
-    }
-
     /// @notice Test the registerOracles modifier to check if the oracles are registered
     function test_RegisterOracles() external fund deployment registerOracles {
         for (uint256 i; i < generators.length; i++) {
@@ -166,6 +160,11 @@ contract LLMOracleCoordinatorTest is Helper {
         // set scores
         scores = [1, 5];
 
+        // remove validator from whitelist before trying to validate
+        vm.prank(dria);
+        oracleRegistry.removeFromWhitelist(validators[0]);
+        assertFalse(oracleRegistry.whitelisted(validators[0]));
+
         // try to validate without being whitelisted
         uint256 valNonce = mineNonce(validators[0], 1);
         vm.expectRevert(abi.encodeWithSelector(Whitelist.NotWhitelisted.selector, validators[0]));
@@ -180,9 +179,9 @@ contract LLMOracleCoordinatorTest is Helper {
         setOracleParameters(1, 2, 2)
         deployment
         registerOracles
-        addValidatorsToWhitelist
         safeRequest(requester, 1)
         checkAllowances
+        addValidatorsToWhitelist
     {
         // generators respond
         for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
@@ -237,21 +236,19 @@ contract LLMOracleCoordinatorTest is Helper {
         registerOracles
         safeRequest(requester, 1)
     {
+        vm.prank(dria);
+        oracleRegistry.addToWhitelist(generators);
+        assertTrue(oracleRegistry.whitelisted(generators[0]));
+
         // register generators[0] as a validator as well
         vm.prank(generators[0]);
         oracleRegistry.register(LLMOracleKind.Validator);
 
         // respond as generator
-        for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
-            safeRespond(generators[i], output, 1);
-        }
+        safeRespond(generators[0], output, 1);
 
         // set scores for (setOracleParameters(1, 1, 1))
         scores = [30];
-
-        // add generator to whitelist to be able to validate
-        vm.prank(dria);
-        oracleCoordinator.addToWhitelist(generators);
 
         // try to validate after responding as generator
         uint256 nonce = mineNonce(generators[0], 1);

@@ -12,7 +12,7 @@ import {Whitelist} from "./Whitelist.sol";
 
 /// @title LLM Oracle Coordinator
 /// @notice Responsible for coordinating the Oracle responses to LLM generation requests.
-contract LLMOracleCoordinator is Whitelist, LLMOracleTask, LLMOracleManager, UUPSUpgradeable {
+contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeable {
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -94,6 +94,13 @@ contract LLMOracleCoordinator is Whitelist, LLMOracleTask, LLMOracleManager, UUP
     modifier onlyAtStatus(uint256 taskId, TaskStatus status) {
         if (requests[taskId].status != status) {
             revert InvalidTaskStatus(taskId, requests[taskId].status, status);
+        }
+        _;
+    }
+
+    modifier isWhiteListed(address account) {
+        if (!registry.whitelisted(account)) {
+            revert Whitelist.NotWhitelisted(account);
         }
         _;
     }
@@ -266,9 +273,9 @@ contract LLMOracleCoordinator is Whitelist, LLMOracleTask, LLMOracleManager, UUP
     /// @param metadata Optional metadata for this validation.
     function validate(uint256 taskId, uint256 nonce, uint256[] calldata scores, bytes calldata metadata)
         public
-        isWhiteListed(msg.sender)
         onlyRegistered(LLMOracleKind.Validator)
         onlyAtStatus(taskId, TaskStatus.PendingValidation)
+        isWhiteListed(msg.sender)
     {
         TaskRequest storage task = requests[taskId];
 

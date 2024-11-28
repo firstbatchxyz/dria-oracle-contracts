@@ -81,10 +81,10 @@ abstract contract Helper is Test {
     /// @notice Add validators to the whitelist.
     modifier addValidatorsToWhitelist() {
         vm.prank(dria);
-        oracleCoordinator.addToWhitelist(validators);
+        oracleRegistry.addToWhitelist(validators);
 
         for (uint256 i; i < validators.length; i++) {
-            vm.assertTrue(oracleCoordinator.whitelisted(validators[i]));
+            vm.assertTrue(oracleRegistry.whitelisted(validators[i]));
         }
         _;
     }
@@ -107,7 +107,12 @@ abstract contract Helper is Test {
             vm.label(generators[i], string.concat("Generator#", vm.toString(i + 1)));
         }
 
+        // add validators to whitelist
+        vm.prank(dria);
+        oracleRegistry.addToWhitelist(validators);
+
         for (uint256 i = 0; i < validators.length; i++) {
+            assertTrue(oracleRegistry.whitelisted(validators[i]));
             // approve the validatorStakeAmount for the validator
             vm.startPrank(validators[i]);
             token.approve(address(oracleRegistry), stakes.validatorStakeAmount);

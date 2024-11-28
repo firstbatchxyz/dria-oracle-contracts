@@ -2,8 +2,8 @@
 pragma solidity ^0.8.20;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {Whitelist} from "./Whitelist.sol";
 
 /// @notice The type of Oracle.
 enum LLMOracleKind {
@@ -14,7 +14,7 @@ enum LLMOracleKind {
 /// @title LLM Oracle Registry
 /// @notice Holds the addresses that are eligible to respond to LLM requests.
 /// @dev There may be several types of oracle kinds, and each require their own stake.
-contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
+contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -92,6 +92,12 @@ contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
     /// @dev Reverts if the user is already registered or has insufficient funds.
     /// @param kind The kind of Oracle to unregister.
     function register(LLMOracleKind kind) public {
+        if (kind == LLMOracleKind.Validator) {
+            if (!whitelisted[msg.sender]) {
+                revert NotWhitelisted(msg.sender);
+            }
+        }
+
         uint256 amount = getStakeAmount(kind);
 
         // ensure the user is not already registered
@@ -120,6 +126,11 @@ contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
         // ensure the user is registered
         if (amount == 0) {
             revert NotRegistered(msg.sender);
+        }
+
+        // remove validator from whitelist
+        if (kind == LLMOracleKind.Validator && whitelisted[msg.sender]) {
+            whitelisted[msg.sender] = false;
         }
 
         // unregister the user
