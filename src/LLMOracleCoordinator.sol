@@ -55,6 +55,8 @@ contract LLMOracleCoordinator is Whitelist, LLMOracleTask, LLMOracleManager, UUP
     /// @notice The oracle has already responded to this task.
     error AlreadyResponded(uint256 taskId, address oracle);
 
+    /// @notice Input is Empty.
+    error InvalidInput();
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -157,7 +159,9 @@ contract LLMOracleCoordinator is Whitelist, LLMOracleTask, LLMOracleManager, UUP
         LLMOracleTaskParameters calldata parameters
     ) public onlyValidParameters(parameters) returns (uint256) {
         (uint256 totalfee, uint256 generatorFee, uint256 validatorFee) = getFee(parameters);
-
+        if (input.length == 0) {
+            revert InvalidInput();
+        }
         // check allowance requirements
         uint256 allowance = feeToken.allowance(msg.sender, address(this));
         if (allowance < totalfee) {
@@ -323,7 +327,7 @@ contract LLMOracleCoordinator is Whitelist, LLMOracleTask, LLMOracleManager, UUP
     /// @param nonce The candidate proof-of-work nonce.
     function assertValidNonce(uint256 taskId, TaskRequest storage task, uint256 nonce) internal view {
         bytes memory message = abi.encodePacked(taskId, task.input, task.requester, msg.sender, nonce);
-        if (uint256(keccak256(message)) > type(uint256).max >> uint256(task.parameters.difficulty)) {
+        if (uint256(keccak256(message)) >= type(uint256).max >> uint256(task.parameters.difficulty)) {
             revert InvalidNonce(taskId, nonce);
         }
     }
