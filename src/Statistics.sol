@@ -13,7 +13,7 @@ library Statistics {
         for (uint256 i = 0; i < data.length; i++) {
             sum += data[i];
         }
-        // sum * 1 / data.length 
+        // sum * 1 / data.length
         ans = Math.mulDiv(sum, 1, data.length);
     }
 

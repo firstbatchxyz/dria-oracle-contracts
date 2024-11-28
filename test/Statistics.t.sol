@@ -8,6 +8,7 @@ import {Statistics} from "../src/Statistics.sol";
 contract StatisticsTest is Test {
     uint8 constant UINT8_MAX = type(uint8).max;
     uint8 constant UINT8_MIN = type(uint8).min;
+
     function testFuzz_Average(uint8 number1, uint8 number2, uint8 number3, uint8 number4) external pure {
         vm.assume(number1 <= UINT8_MAX && number1 >= UINT8_MIN);
         vm.assume(number2 <= UINT8_MAX && number2 >= UINT8_MIN);
