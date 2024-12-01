@@ -38,6 +38,9 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
     /// @notice Insufficient stake amount during registration.
     error InsufficientFunds();
 
+    /// @notice Minimum waiting time has not passed for unregistering.
+    error InvalidUnregistering(uint256 minTimeToWait);
+
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -48,8 +51,14 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
     /// @notice Stake amount to be registered as an Oracle that can serve validation requests.
     uint256 public validatorStakeAmount;
 
+    /// @notice Minimum registration time for oracles.
+    uint256 public minRegistrationTime;
+
     /// @notice Registrations per address & kind. If amount is 0, it is not registered.
     mapping(address oracle => mapping(LLMOracleKind => uint256 amount)) public registrations;
+
+    /// @notice Registered times per oracle.
+    mapping(address oracle => uint256 registerTime) public registrationTimes;
 
     /// @notice Token used for staking.
     ERC20 public token;
@@ -74,13 +83,16 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /// @dev Sets the owner to be the deployer, sets initial stake amount.
-    function initialize(uint256 _generatorStakeAmount, uint256 _validatorStakeAmount, address _token)
-        public
-        initializer
-    {
+    function initialize(
+        uint256 _generatorStakeAmount,
+        uint256 _validatorStakeAmount,
+        address _token,
+        uint256 _minRegistrationTime
+    ) public initializer {
         __Ownable_init(msg.sender);
         generatorStakeAmount = _generatorStakeAmount;
         validatorStakeAmount = _validatorStakeAmount;
+        minRegistrationTime = _minRegistrationTime;
         token = ERC20(_token);
     }
 
@@ -113,6 +125,8 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
 
         // register the user
         registrations[msg.sender][kind] = amount;
+        registrationTimes[msg.sender] = block.timestamp;
+
         emit Registered(msg.sender, kind);
     }
 
@@ -133,8 +147,14 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
             whitelisted[msg.sender] = false;
         }
 
+        // enough time has not passed to unregister
+        if (block.timestamp - registrationTimes[msg.sender] < minRegistrationTime) {
+            revert InvalidUnregistering(block.timestamp - registrationTimes[msg.sender]);
+        }
+
         // unregister the user
         delete registrations[msg.sender][kind];
+        delete registrationTimes[msg.sender];
         emit Unregistered(msg.sender, kind);
 
         // approve its stake back

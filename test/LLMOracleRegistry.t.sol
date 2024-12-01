@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Vm} from "forge-std/Vm.sol";
 import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {console} from "forge-std/Test.sol";
+import {Helper} from "./Helper.t.sol";
 
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
-
 import {WETH9} from "./WETH9.sol";
-import {Helper} from "./Helper.t.sol";
 
 contract LLMOracleRegistryTest is Helper {
     uint256 totalStakeAmount;
@@ -19,12 +18,12 @@ contract LLMOracleRegistryTest is Helper {
 
         token = new WETH9();
 
-        // TODO: deploy contracts with deploy script instead
         vm.startPrank(dria);
         address registryProxy = Upgrades.deployUUPSProxy(
             "LLMOracleRegistry.sol",
             abi.encodeCall(
-                LLMOracleRegistry.initialize, (stakes.generatorStakeAmount, stakes.validatorStakeAmount, address(token))
+                LLMOracleRegistry.initialize,
+                (stakes.generatorStakeAmount, stakes.validatorStakeAmount, address(token), minRegistrationTime)
             )
         );
 
@@ -32,10 +31,18 @@ contract LLMOracleRegistryTest is Helper {
         oracleRegistry = LLMOracleRegistry(registryProxy);
         vm.stopPrank();
 
+        assertEq(oracleRegistry.generatorStakeAmount(), stakes.generatorStakeAmount);
+        assertEq(oracleRegistry.validatorStakeAmount(), stakes.validatorStakeAmount);
+        assertEq(oracleRegistry.minRegistrationTime(), minRegistrationTime);
+
+        assertEq(address(oracleRegistry.token()), address(token));
+        assertEq(oracleRegistry.owner(), dria);
+
         vm.label(oracle, "Oracle");
         vm.label(address(this), "LLMOracleRegistryTest");
         vm.label(address(oracleRegistry), "LLMOracleRegistry");
         vm.label(address(oracleCoordinator), "LLMOracleCoordinator");
+        vm.label(address(token), "WETH9");
         _;
     }
 
@@ -49,6 +56,7 @@ contract LLMOracleRegistryTest is Helper {
         _;
     }
 
+    /// @notice register oracle with kind
     modifier registerOracle(LLMOracleKind kind) {
         if (kind == LLMOracleKind.Validator) {
             // add generators to whitelist
@@ -56,35 +64,28 @@ contract LLMOracleRegistryTest is Helper {
             oracleRegistry.addToWhitelist(generators);
         }
 
-        // register oracle
         vm.startPrank(oracle);
+        // approve the registry to spend tokens on behalf of the oracle
         token.approve(address(oracleRegistry), totalStakeAmount);
 
-        // Register the generator oracle
+        // register oracle
         oracleRegistry.register(kind);
         vm.stopPrank();
         _;
     }
 
-    modifier unregisterOracle(LLMOracleKind kind) {
-        // Simulate the oracle account
+    /// @notice unregister oracle with kind
+    function unregisterOracle(LLMOracleKind kind) internal {
+        // simulate the oracle account
         vm.startPrank(oracle);
         token.approve(address(oracleRegistry), stakes.generatorStakeAmount);
         oracleRegistry.unregister(kind);
         vm.stopPrank();
 
         assertFalse(oracleRegistry.isRegistered(oracle, LLMOracleKind.Generator));
-        _;
     }
 
-    function test_Deployment() external deployment {
-        assertEq(oracleRegistry.generatorStakeAmount(), stakes.generatorStakeAmount);
-        assertEq(oracleRegistry.validatorStakeAmount(), stakes.validatorStakeAmount);
-
-        assertEq(address(oracleRegistry.token()), address(token));
-        assertEq(oracleRegistry.owner(), dria);
-    }
-
+    /// @notice Remove oracle from whitelist
     function test_RemoveFromWhitelist() external deployment fund registerOracle(LLMOracleKind.Validator) {
         vm.prank(dria);
         oracleRegistry.removeFromWhitelist(validators[1]);
@@ -119,23 +120,42 @@ contract LLMOracleRegistryTest is Helper {
     /// @notice Oracle registers as validator
     function test_RegisterValidatorOracle() external deployment fund registerOracle(LLMOracleKind.Validator) {}
 
-    /// @notice Oracle unregisters as generator
-    function test_UnregisterOracle()
+    /// @notice Oracle try to unregister without enough time has passed
+    function test_RevertWhen_UnregisterBeforeEnoughTimeHasPassed()
         external
         deployment
         fund
         registerOracle(LLMOracleKind.Generator)
-        unregisterOracle(LLMOracleKind.Generator)
-    {}
+    {
+        vm.startPrank(oracle);
+        token.approve(address(oracleRegistry), stakes.generatorStakeAmount);
 
-    /// @notice Oracle try to unregisters as generator twice
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                LLMOracleRegistry.InvalidUnregistering.selector,
+                block.timestamp - oracleRegistry.registrationTimes(oracle)
+            )
+        );
+        oracleRegistry.unregister(LLMOracleKind.Generator);
+        vm.stopPrank();
+    }
+
+    /// @notice Oracle unregisteration as generator
+    function test_UnregisterOracle() external deployment fund registerOracle(LLMOracleKind.Generator) {
+        vm.warp(minRegistrationTime + 1);
+        unregisterOracle(LLMOracleKind.Generator);
+    }
+
+    /// @notice Oracle try to unregister as generator twice
     function test_RevertWhen_UnregisterSameGeneratorTwice()
         external
         deployment
         fund
         registerOracle(LLMOracleKind.Generator)
-        unregisterOracle(LLMOracleKind.Generator)
     {
+        vm.warp(minRegistrationTime + 1);
+        unregisterOracle(LLMOracleKind.Generator);
+
         vm.prank(oracle);
         vm.expectRevert(abi.encodeWithSelector(LLMOracleRegistry.NotRegistered.selector, oracle));
         oracleRegistry.unregister(LLMOracleKind.Generator);
@@ -154,9 +174,11 @@ contract LLMOracleRegistryTest is Helper {
         addValidatorsToWhitelist
         registerOracle(LLMOracleKind.Generator)
         registerOracle(LLMOracleKind.Validator)
-        unregisterOracle(LLMOracleKind.Generator)
-        unregisterOracle(LLMOracleKind.Validator)
     {
+        vm.warp(minRegistrationTime + 1);
+        unregisterOracle(LLMOracleKind.Generator);
+        unregisterOracle(LLMOracleKind.Validator);
+
         uint256 balanceBefore = token.balanceOf(oracle);
         token.approve(address(oracleRegistry), totalStakeAmount);
 

@@ -29,8 +29,6 @@ abstract contract LLMOracleManager is OwnableUpgradeable {
     /// @dev When scaled with difficulty & number of validations, we denote it as `validatorFee`.
     uint256 public validationFee;
 
-    /// @notice The deviation factor for the validation scores.
-    uint64 public validationDeviationFactor;
     /// @notice The deviation factor for the generation scores.
     uint64 public generationDeviationFactor;
 
@@ -131,15 +129,10 @@ abstract contract LLMOracleManager is OwnableUpgradeable {
         maximumParameters = maximums;
     }
 
-    /// @notice Update deviation factors.
+    /// @notice Update generation deviation factor.
     /// @dev Provide the same value to keep it unchanged.
     /// @param _generationDeviationFactor The new generation deviation factor.
-    /// @param _validationDeviationFactor The new validation deviation factor.
-    function setDeviationFactors(uint64 _generationDeviationFactor, uint64 _validationDeviationFactor)
-        public
-        onlyOwner
-    {
+    function setGenerationDeviationFactor(uint64 _generationDeviationFactor) public onlyOwner {
         generationDeviationFactor = _generationDeviationFactor;
-        validationDeviationFactor = _validationDeviationFactor;
     }
 }

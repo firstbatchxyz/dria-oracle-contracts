@@ -29,20 +29,6 @@ abstract contract Whitelist is OwnableUpgradeable {
     mapping(address => bool) public whitelisted;
 
     /*//////////////////////////////////////////////////////////////
-                                 MODIFIERS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice To check if the given address is whitelisted.
-    /// @param validator The address to check if it is whitelisted.
-    /// @dev Reverts if the `validator` is not whitelisted.
-    modifier isWhiteListed(address validator) {
-        if (!whitelisted[validator]) {
-            revert NotWhitelisted(validator);
-        }
-        _;
-    }
-
-    /*//////////////////////////////////////////////////////////////
                                   LOGIC
     //////////////////////////////////////////////////////////////*/
 

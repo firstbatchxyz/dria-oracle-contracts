@@ -1,6 +1,10 @@
 # Compiler files
 cache/
 out/
+storage/
+
+# coverage
+Coverage/
 
 # Ignores development broadcast logs
 !/broadcast
@@ -12,3 +16,6 @@ docs/
 
 # Dotenv file
 .env
+
+# Gas snapshot
+.gas-snapshot/

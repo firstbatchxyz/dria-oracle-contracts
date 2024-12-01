@@ -42,7 +42,10 @@ contract Deploy is Script {
         // deploy llm contracts
         address registryProxy = Upgrades.deployUUPSProxy(
             "LLMOracleRegistry.sol",
-            abi.encodeCall(LLMOracleRegistry.initialize, (genStake, valStake, address(config.token())))
+            abi.encodeCall(
+                LLMOracleRegistry.initialize,
+                (genStake, valStake, address(config.token()), config.minRegistrationTime())
+            )
         );
 
         // wrap proxy with the LLMOracleRegistry

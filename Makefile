@@ -18,6 +18,10 @@ endif
 install:
 	forge install foundry-rs/forge-std --no-commit && forge install firstbatchxyz/dria-oracle-contracts --no-commit && forge install OpenZeppelin/openzeppelin-contracts --no-commit && forge install OpenZeppelin/openzeppelin-foundry-upgrades --no-commit && forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
 
+# Update modules
+update:
+	forge update
+	
 # Build the contracts
 build:
 	forge clean && forge build
@@ -26,9 +30,9 @@ build:
 snapshot:
 	forge snapshot
 
-# Test the contracts on forked base-sepolia network
+# Test the contracts on local
 test:
-	forge clean && forge test --fork-url $(BASE_TEST_RPC_URL)
+	forge clean && forge test 
 
 anvil:
 	anvil --fork-url $(BASE_TEST_RPC_URL)
@@ -46,6 +50,10 @@ doc:
 	forge doc
 
 # TODO: forge-verify
+
+# Format code
+fmt:
+	forge fmt
 
 # Prevent make from interpreting the network name as a target
 $(eval $(network):;@:)

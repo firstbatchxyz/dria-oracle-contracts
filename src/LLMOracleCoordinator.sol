@@ -57,6 +57,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
 
     /// @notice Input is Empty.
     error InvalidInput();
+
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -76,6 +77,8 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
     mapping(uint256 taskId => TaskResponse[]) public responses;
     /// @notice LLM generation response validations.
     mapping(uint256 taskId => TaskValidation[]) public validations;
+    /// @notice To track the platform fees to be able to owner withdraw the correct amount of fee.
+    uint256 public platformFeeBalance;
 
     /*//////////////////////////////////////////////////////////////
                                  MODIFIERS
@@ -166,9 +169,11 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         LLMOracleTaskParameters calldata parameters
     ) public onlyValidParameters(parameters) returns (uint256) {
         (uint256 totalfee, uint256 generatorFee, uint256 validatorFee) = getFee(parameters);
+
         if (input.length == 0) {
             revert InvalidInput();
         }
+
         // check allowance requirements
         uint256 allowance = feeToken.allowance(msg.sender, address(this));
         if (allowance < totalfee) {
@@ -183,6 +188,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
 
         // transfer tokens
         feeToken.transferFrom(msg.sender, address(this), totalfee);
+        platformFeeBalance += platformFee;
 
         // increment the task id for later tasks & emit task request event
         uint256 taskId = nextTaskId;
@@ -361,7 +367,8 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
             uint256 innerSum = 0;
             uint256 innerCount = 0;
             for (uint256 v_i = 0; v_i < task.parameters.numValidations; ++v_i) {
-                uint256 score = scores[v_i];
+                // score is multiplied by 1e18 to be able to compare the mean and stddev
+                uint256 score = scores[v_i] * 1e18;
                 if ((score + _stddev >= _mean) && (score <= _mean + _stddev)) {
                     innerSum += score;
                     innerCount++;
@@ -387,7 +394,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         (uint256 stddev, uint256 mean) = Statistics.stddev(generationScores);
         for (uint256 g_i = 0; g_i < task.parameters.numGenerations; g_i++) {
             // ignore lower outliers
-            if (generationScores[g_i] + generationDeviationFactor * stddev >= mean) {
+            if ((generationScores[g_i] * 1e18) + generationDeviationFactor * stddev >= mean) {
                 _increaseAllowance(responses[taskId][g_i].responder, task.generatorFee);
             }
         }
@@ -395,7 +402,8 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
 
     /// @notice Withdraw the platform fees & along with remaining fees within the contract.
     function withdrawPlatformFees() public onlyOwner {
-        feeToken.transfer(owner(), feeToken.balanceOf(address(this)));
+        feeToken.transfer(owner(), platformFeeBalance);
+        platformFeeBalance = 0;
     }
 
     /// @notice Returns the responses to a given taskId.

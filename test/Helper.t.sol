@@ -2,28 +2,16 @@
 pragma solidity ^0.8.20;
 
 import {Vm} from "forge-std/Vm.sol";
-import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
-import {Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
 import {LLMOracleCoordinator} from "../src/LLMOracleCoordinator.sol";
 import {LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
-
+import {Stakes, Fees} from "../script/HelperConfig.s.sol";
 import {WETH9} from "./WETH9.sol";
 
-import {Stakes, Fees} from "../script/HelperConfig.s.sol";
-
-// TODO:
-/// @notice Created for tests to reduce code duplication
+/// @notice CREATED TO REDUCE CODE DUPLICATION IN TESTS
 abstract contract Helper is Test {
-    /// @notice Parameters for the buyer agent deployment
-    struct BuyerAgentParameters {
-        string name;
-        string description;
-        uint96 royaltyFee;
-        uint256 amountPerRound;
-    }
-
     /*//////////////////////////////////////////////////////////////
                              ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -60,11 +48,13 @@ abstract contract Helper is Test {
 
     uint256[] scores = [1, 1, 1];
 
+    uint256 public minRegistrationTime = 1 days; // in seconds
+
     function setUp() public {
-        // define parameters
+        // define parameters for tests
         dria = vm.addr(1);
         validators = [vm.addr(2), vm.addr(3), vm.addr(4)];
-        generators = [vm.addr(5), vm.addr(6), vm.addr(7)];
+        generators = [vm.addr(5), vm.addr(6), vm.addr(7), vm.addr(8)];
 
         oracleParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 1, score: 0});
 
@@ -107,7 +97,7 @@ abstract contract Helper is Test {
             vm.label(generators[i], string.concat("Generator#", vm.toString(i + 1)));
         }
 
-        // add validators to whitelist
+        // add validators to whitelist if not already added
         vm.prank(dria);
         oracleRegistry.addToWhitelist(validators);
 
@@ -142,41 +132,41 @@ abstract contract Helper is Test {
     }
 
     /// @notice Check generator and validator allowances before and after function execution
-    /// @dev Used coordinator tests (Only for non-revert functions)
+    /// @dev Used only for NON-REVERTED functions in coordinator tests
+    /// @dev request must be made in the function that uses this modifier
+
     modifier checkAllowances() {
         uint256[] memory generatorAllowancesBefore = new uint256[](oracleParameters.numGenerations);
-        uint256[] memory validatorAllowancesBefore;
+        uint256[] memory validatorAllowancesBefore = new uint256[](oracleParameters.numValidations);
 
         // get generator allowances before function execution
         for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
             generatorAllowancesBefore[i] = token.allowance(address(oracleCoordinator), generators[i]);
         }
 
-        // if numValidations is greater than 0 get the initial validator allowances to check the differences after function execution
-        if (oracleParameters.numValidations > 0) {
-            validatorAllowancesBefore = new uint256[](oracleParameters.numValidations);
-            for (uint256 i = 0; i < oracleParameters.numValidations; i++) {
-                validatorAllowancesBefore[i] = token.allowance(address(oracleCoordinator), validators[i]);
-            }
-            // execute function
-            _;
-
-            // validator allowances after function execution
-            (,,,,, uint256 valFee,,,) = oracleCoordinator.requests(1);
-            for (uint256 i = 0; i < oracleParameters.numValidations; i++) {
-                uint256 allowanceAfter = token.allowance(address(oracleCoordinator), validators[i]);
-                assertEq(allowanceAfter - validatorAllowancesBefore[i], valFee * oracleParameters.numGenerations);
-            }
-        } else {
-            // if no validations skip validator checks
-            _;
+        // get validator allowances before function execution
+        for (uint256 i = 0; i < oracleParameters.numValidations; i++) {
+            validatorAllowancesBefore[i] = token.allowance(address(oracleCoordinator), validators[i]);
         }
 
+        // execute function
+        _;
+
+        (,,,, uint256 generatorFee, uint256 validatorFee,,,) = oracleCoordinator.requests(1);
         // check generator allowances after function execution
+        // when scores are same all generators get generator fee
         for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
-            uint256 allowanceAfter = token.allowance(address(oracleCoordinator), generators[i]);
-            (,,,, uint256 expectedIncrease,,,,) = oracleCoordinator.requests(1);
-            assertEq(allowanceAfter - generatorAllowancesBefore[i], expectedIncrease);
+            uint256 generatorAllowanceAfter = token.allowance(address(oracleCoordinator), generators[i]);
+            assertEq(generatorAllowanceAfter - generatorAllowancesBefore[i], generatorFee);
+        }
+
+        // check validator allowances after function execution if numValidations is greater than 0
+        // validator allowances after function execution
+        for (uint256 i = 0; i < oracleParameters.numValidations; i++) {
+            uint256 validatorAllowanceAfter = token.allowance(address(oracleCoordinator), validators[i]);
+            assertEq(
+                validatorAllowanceAfter - validatorAllowancesBefore[i], validatorFee * oracleParameters.numGenerations
+            );
         }
     }
 

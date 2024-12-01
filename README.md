@@ -10,14 +10,26 @@ Compile the contracts:
 make build
 ```
 
-> [!NOTE]
->
-> Please prepare a valid `.env` according to `.env.example` before running tests.
-
-Run tests on forked base-sepolia:
+Run tests on local:
 
 ```sh
 make test
+```
+
+## Format
+
+Format code with:
+
+```sh
+make fmt
+```
+
+## Update
+
+Update modules with:
+
+```sh
+make update
 ```
 
 ## Coverage
@@ -106,6 +118,14 @@ make snapshot
 ```
 
 You can see the snapshot `.gas-snapshot` file in the current directory.
+
+## Format
+
+Format code with:
+
+```sh
+make fmt
+```
 
 ## Generate documentation
 
