@@ -55,5 +55,9 @@ doc:
 fmt:
 	forge fmt
 
+# Coverage
+cov:
+	forge coverage --no-match-coverage "(test|mock|script)"
+
 # Prevent make from interpreting the network name as a target
 $(eval $(network):;@:)
