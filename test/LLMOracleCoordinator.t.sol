@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 import {Helper} from "./Helper.t.sol";
-import {console} from "forge-std/Test.sol";
 
 import {LLMOracleTask, LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
@@ -258,7 +257,7 @@ contract LLMOracleCoordinatorTest is Helper {
     function test_ValidatorIsGenerator()
         external
         fund
-        setOracleParameters(1, 1, 1)
+        setOracleParameters(1, 2, 1)
         deployment
         registerOracles
         safeRequest(requester, 1)
@@ -273,9 +272,10 @@ contract LLMOracleCoordinatorTest is Helper {
 
         // respond as generator
         safeRespond(generators[0], output, 1);
+        safeRespond(generators[1], output, 1);
 
-        // set scores for (setOracleParameters(1, 1, 1))
-        scores = [30];
+        // set scores
+        scores = [30, 27];
 
         // try to validate after responding as generator
         uint256 nonce = mineNonce(generators[0], 1);

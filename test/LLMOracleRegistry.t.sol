@@ -132,7 +132,7 @@ contract LLMOracleRegistryTest is Helper {
         vm.expectRevert(
             abi.encodeWithSelector(
                 LLMOracleRegistry.TooEarlyToUnregister.selector,
-                block.timestamp - oracleRegistry.registrationTimes(oracle)
+                block.timestamp - oracleRegistry.registrationTimes(oracle, LLMOracleKind.Generator)
             )
         );
         oracleRegistry.unregister(LLMOracleKind.Generator);

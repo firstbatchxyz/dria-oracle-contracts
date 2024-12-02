@@ -60,7 +60,7 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
     mapping(address oracle => mapping(LLMOracleKind => uint256 amount)) public registrations;
 
     /// @notice Registered times per oracle.
-    mapping(address oracle => uint256 registerTime) public registrationTimes;
+    mapping(address oracle => mapping(LLMOracleKind => uint256 registeredTime)) public registrationTimes;
 
     /// @notice Token used for staking.
     ERC20 public token;
@@ -127,7 +127,7 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
 
         // register the user
         registrations[msg.sender][kind] = amount;
-        registrationTimes[msg.sender] = block.timestamp;
+        registrationTimes[msg.sender][kind] = block.timestamp;
 
         emit Registered(msg.sender, kind);
     }
@@ -150,13 +150,13 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
         }
 
         // enough time has not passed to unregister
-        if (block.timestamp - registrationTimes[msg.sender] < minRegistrationTime) {
-            revert TooEarlyToUnregister(block.timestamp - registrationTimes[msg.sender]);
+        if (block.timestamp - registrationTimes[msg.sender][kind] < minRegistrationTime) {
+            revert TooEarlyToUnregister(block.timestamp - registrationTimes[msg.sender][kind]);
         }
 
         // unregister the user
         delete registrations[msg.sender][kind];
-        delete registrationTimes[msg.sender];
+        delete registrationTimes[msg.sender][kind];
         emit Unregistered(msg.sender, kind);
 
         // approve its stake back
