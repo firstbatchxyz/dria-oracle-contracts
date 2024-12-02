@@ -39,7 +39,7 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
     error InsufficientFunds();
 
     /// @notice Minimum waiting time has not passed for unregistering.
-    error InvalidUnregistering(uint256 minTimeToWait);
+    error TooEarlyToUnregister(uint256 minTimeToWait);
 
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
@@ -52,6 +52,8 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
     uint256 public validatorStakeAmount;
 
     /// @notice Minimum registration time for oracles.
+    /// @dev This is to prevent spamming the registry mechanism.
+    /// @dev If the oracle wants to unregister, they have to wait at least this time before doing so.
     uint256 public minRegistrationTime;
 
     /// @notice Registrations per address & kind. If amount is 0, it is not registered.
@@ -149,7 +151,7 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
 
         // enough time has not passed to unregister
         if (block.timestamp - registrationTimes[msg.sender] < minRegistrationTime) {
-            revert InvalidUnregistering(block.timestamp - registrationTimes[msg.sender]);
+            revert TooEarlyToUnregister(block.timestamp - registrationTimes[msg.sender]);
         }
 
         // unregister the user

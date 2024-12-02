@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {Vm} from "forge-std/Vm.sol";
-import {Test, console} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
 import {LLMOracleCoordinator} from "../src/LLMOracleCoordinator.sol";
@@ -49,6 +49,8 @@ abstract contract Helper is Test {
     uint256[] scores = [1, 1, 1];
 
     uint256 public minRegistrationTime = 1 days; // in seconds
+    uint256 public minScore = 1;
+    uint256 public maxScore = type(uint8).max; // 255
 
     function setUp() public {
         // define parameters for tests
@@ -56,7 +58,7 @@ abstract contract Helper is Test {
         validators = [vm.addr(2), vm.addr(3), vm.addr(4)];
         generators = [vm.addr(5), vm.addr(6), vm.addr(7), vm.addr(8)];
 
-        oracleParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 1, score: 0});
+        oracleParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 1});
 
         stakes = Stakes({generatorStakeAmount: 0.01 ether, validatorStakeAmount: 0.01 ether});
         fees = Fees({platformFee: 0.0001 ether, generationFee: 0.0002 ether, validationFee: 0.00003 ether});

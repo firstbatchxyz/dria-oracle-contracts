@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
-import {console} from "forge-std/Test.sol";
 import {Helper} from "./Helper.t.sol";
 
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
@@ -132,7 +131,7 @@ contract LLMOracleRegistryTest is Helper {
 
         vm.expectRevert(
             abi.encodeWithSelector(
-                LLMOracleRegistry.InvalidUnregistering.selector,
+                LLMOracleRegistry.TooEarlyToUnregister.selector,
                 block.timestamp - oracleRegistry.registrationTimes(oracle)
             )
         );

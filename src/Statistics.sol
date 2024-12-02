@@ -6,6 +6,8 @@ import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 
 /// @notice Simple statistic library for uint256 arrays.
 library Statistics {
+    error ComputeError();
+
     uint256 constant SCALING_FACTOR = 1e18;
 
     /// @notice Compute the mean of the data.
@@ -14,7 +16,9 @@ library Statistics {
         uint256 sum = 0;
         for (uint256 i = 0; i < data.length; i++) {
             (bool success, uint256 newSum) = Math.tryAdd(data[i], sum);
-            require(success);
+            if (!success) {
+                revert ComputeError();
+            }
             sum = newSum;
         }
         ans = Math.mulDiv(sum, SCALING_FACTOR, data.length);
@@ -31,7 +35,10 @@ library Statistics {
             int256 diff = int256(scaledData) - int256(mean);
             sum += SignedMath.abs(diff * diff);
         }
-        (, uint256 divisor) = Math.tryMul(data.length, SCALING_FACTOR);
+        (bool success, uint256 divisor) = Math.tryMul(data.length, SCALING_FACTOR);
+        if (!success) {
+            revert ComputeError();
+        }
         ans = Math.mulDiv(sum, 1, divisor);
     }
 
@@ -42,7 +49,9 @@ library Statistics {
         (uint256 _variance, uint256 _mean) = variance(data);
         mean = _mean;
         (bool success, uint256 scaledVariance) = Math.tryMul(_variance, SCALING_FACTOR);
-        require(success);
+        if (!success) {
+            revert ComputeError();
+        }
         ans = Math.sqrt(scaledVariance);
     }
 }

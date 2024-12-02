@@ -57,7 +57,15 @@ contract Deploy is Script {
             "LLMOracleCoordinator.sol",
             abi.encodeCall(
                 LLMOracleCoordinator.initialize,
-                (address(oracleRegistry), address(config.token()), platformFee, genFee, valFee)
+                (
+                    address(oracleRegistry),
+                    address(config.token()),
+                    platformFee,
+                    genFee,
+                    valFee,
+                    config.minScore(),
+                    config.maxScore()
+                )
             )
         );
 

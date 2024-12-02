@@ -34,7 +34,15 @@ contract LLMOracleCoordinatorTest is Helper {
             "LLMOracleCoordinator.sol",
             abi.encodeCall(
                 LLMOracleCoordinator.initialize,
-                (address(oracleRegistry), address(token), fees.platformFee, fees.generationFee, fees.validationFee)
+                (
+                    address(oracleRegistry),
+                    address(token),
+                    fees.platformFee,
+                    fees.generationFee,
+                    fees.validationFee,
+                    minScore,
+                    maxScore
+                )
             )
         );
         oracleCoordinator = LLMOracleCoordinator(coordinatorProxy);
@@ -241,6 +249,7 @@ contract LLMOracleCoordinatorTest is Helper {
         vm.prank(dria);
         oracleCoordinator.withdrawPlatformFees();
         uint256 balanceAfter = token.balanceOf(dria);
+
         assertEq(balanceAfter - balanceBefore, fees.platformFee);
     }
 
@@ -286,6 +295,8 @@ contract LLMOracleCoordinatorTest is Helper {
         safeRequest(requester, 1)
         addValidatorsToWhitelist
     {
+        uint256 balanceBefore = token.balanceOf(dria);
+
         uint256[] memory generatorAllowancesBefore = new uint256[](oracleParameters.numGenerations);
 
         // get generator allowances before function execution
@@ -318,5 +329,16 @@ contract LLMOracleCoordinatorTest is Helper {
                 assertEq(generatorAllowanceAfter - generatorAllowancesBefore[i], generatorFee);
             }
         }
+
+        // withdraw platform fees
+        vm.prank(dria);
+        oracleCoordinator.withdrawPlatformFees();
+
+        // get balance of dria after withdraw
+        uint256 balanceAfter = token.balanceOf(dria);
+        // get generator fee
+        (,,,, uint256 genFee,,,,) = oracleCoordinator.requests(1);
+        // only 1 generator doesn't get fee
+        assertEq(balanceAfter - balanceBefore, fees.platformFee + genFee);
     }
 }

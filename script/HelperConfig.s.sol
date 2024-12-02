@@ -24,13 +24,18 @@ contract HelperConfig is Script {
     WETH9 public token;
 
     uint256 public minRegistrationTime; // in seconds
+    uint256 public minScore;
+    uint256 public maxScore;
 
     constructor() {
         // set deployment parameters
         stakes = Stakes({generatorStakeAmount: 0.0001 ether, validatorStakeAmount: 0.000001 ether});
         fees = Fees({platformFee: 0.0001 ether, generationFee: 0.0001 ether, validationFee: 0.0001 ether});
-        taskParams = LLMOracleTaskParameters({difficulty: 2, numGenerations: 1, numValidations: 1, score: 0});
+        taskParams = LLMOracleTaskParameters({difficulty: 2, numGenerations: 1, numValidations: 1});
+
         minRegistrationTime = 1 days;
+        maxScore = type(uint8).max; // 255
+        minScore = 1;
 
         // for base sepolia
         if (block.chainid == 84532) {

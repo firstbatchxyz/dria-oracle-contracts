@@ -87,7 +87,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
     /// @notice Reverts if `msg.sender` is not a registered oracle.
     modifier onlyRegistered(LLMOracleKind kind) {
         if (!registry.isRegistered(msg.sender, kind)) {
-            // when the oracle is not registered or he didn't stake enough funds
+            // when the oracle is not registered or didn't stake enough funds
             revert NotRegistered(msg.sender);
         }
         _;
@@ -141,10 +141,12 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         address _feeToken,
         uint256 _platformFee,
         uint256 _generationFee,
-        uint256 _validationFee
+        uint256 _validationFee,
+        uint256 _minScore,
+        uint256 _maxScore
     ) public initializer {
         __Ownable_init(msg.sender);
-        __LLMOracleManager_init(_platformFee, _generationFee, _validationFee);
+        __LLMOracleManager_init(_platformFee, _generationFee, _validationFee, _minScore, _maxScore);
         registry = LLMOracleRegistry(_oracleRegistry);
         feeToken = ERC20(_feeToken);
         nextTaskId = 1;
@@ -187,8 +189,8 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         }
 
         // transfer tokens
-        feeToken.transferFrom(msg.sender, address(this), totalfee);
         platformFeeBalance += platformFee;
+        feeToken.transferFrom(msg.sender, address(this), totalfee);
 
         // increment the task id for later tasks & emit task request event
         uint256 taskId = nextTaskId;
@@ -292,8 +294,8 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
 
         // ensure scores are within the range
         for (uint256 i = 0; i < scores.length; i++) {
-            if (scores[i] > maximumParameters.score || scores[i] < minimumParameters.score) {
-                revert InvalidParameterRange(scores[i], minimumParameters.score, maximumParameters.score);
+            if (scores[i] > maxScore || scores[i] < minScore) {
+                revert InvalidParameterRange(scores[i], maxScore, minScore);
             }
         }
 
@@ -368,7 +370,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
             uint256 innerCount = 0;
             for (uint256 v_i = 0; v_i < task.parameters.numValidations; ++v_i) {
                 // score is multiplied by 1e18 to be able to compare the mean and stddev
-                uint256 score = scores[v_i] * 1e18;
+                uint256 score = scores[v_i] * Statistics.SCALING_FACTOR;
                 if ((score + _stddev >= _mean) && (score <= _mean + _stddev)) {
                     innerSum += score;
                     innerCount++;
@@ -390,14 +392,17 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
             generationScores[g_i] = responses[taskId][g_i].score;
         }
 
+        uint256 restGenerationFees = task.generatorFee * task.parameters.numGenerations;
         // compute the mean and standard deviation
         (uint256 stddev, uint256 mean) = Statistics.stddev(generationScores);
         for (uint256 g_i = 0; g_i < task.parameters.numGenerations; g_i++) {
             // ignore lower outliers
-            if ((generationScores[g_i] * 1e18) + generationDeviationFactor * stddev >= mean) {
+            if ((generationScores[g_i] * Statistics.SCALING_FACTOR) + generationDeviationFactor * stddev >= mean) {
+                restGenerationFees -= task.generatorFee;
                 _increaseAllowance(responses[taskId][g_i].responder, task.generatorFee);
             }
         }
+        platformFeeBalance += restGenerationFees;
     }
 
     /// @notice Withdraw the platform fees & along with remaining fees within the contract.

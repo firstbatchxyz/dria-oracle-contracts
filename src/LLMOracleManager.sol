@@ -37,22 +37,31 @@ abstract contract LLMOracleManager is OwnableUpgradeable {
     /// @notice Maximums for oracle parameters.
     LLMOracleTaskParameters maximumParameters;
 
+    /// @notice The minimum score for a generation.
+    uint256 public minScore;
+    /// @notice The maximum score for a generation.
+    uint256 public maxScore;
+
     /*//////////////////////////////////////////////////////////////
                                 UPGRADABLE
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Initialize the contract.
-    function __LLMOracleManager_init(uint256 _platformFee, uint256 _generationFee, uint256 _validationFee)
-        internal
-        onlyInitializing
-    {
+    function __LLMOracleManager_init(
+        uint256 _platformFee,
+        uint256 _generationFee,
+        uint256 _validationFee,
+        uint256 _minScore,
+        uint256 _maxScore
+    ) internal onlyInitializing {
         generationDeviationFactor = 1;
 
-        minimumParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 0, score: 1});
-        maximumParameters =
-            LLMOracleTaskParameters({difficulty: 10, numGenerations: 10, numValidations: 10, score: type(uint8).max});
+        minimumParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 0});
+        maximumParameters = LLMOracleTaskParameters({difficulty: 10, numGenerations: 10, numValidations: 10});
 
         setFees(_platformFee, _generationFee, _validationFee);
+        minScore = _minScore;
+        maxScore = _maxScore;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -85,6 +94,9 @@ abstract contract LLMOracleManager is OwnableUpgradeable {
             revert InvalidParameterRange(
                 parameters.numValidations, minimumParameters.numValidations, maximumParameters.numValidations
             );
+        }
+        if (parameters.numValidations != 0 && parameters.numGenerations < 2) {
+            revert InvalidParameterRange(parameters.numGenerations, 2, maximumParameters.numGenerations);
         }
         _;
     }

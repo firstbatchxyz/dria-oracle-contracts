@@ -5,8 +5,6 @@ pragma solidity ^0.8.20;
 /// @dev Prevents stack-too-deep with tight-packing.
 /// TODO: use 256-bit tight-packing here
 struct LLMOracleTaskParameters {
-    /// @notice To track score range.
-    uint8 score;
     /// @notice Difficulty of the task.
     uint8 difficulty;
     /// @notice Number of generations.
