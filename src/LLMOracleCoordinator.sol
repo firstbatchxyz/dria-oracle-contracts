@@ -392,17 +392,17 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
             generationScores[g_i] = responses[taskId][g_i].score;
         }
 
-        uint256 restGenerationFees = task.generatorFee * task.parameters.numGenerations;
         // compute the mean and standard deviation
         (uint256 stddev, uint256 mean) = Statistics.stddev(generationScores);
         for (uint256 g_i = 0; g_i < task.parameters.numGenerations; g_i++) {
             // ignore lower outliers
             if ((generationScores[g_i] * Statistics.SCALING_FACTOR) + generationDeviationFactor * stddev >= mean) {
-                restGenerationFees -= task.generatorFee;
                 _increaseAllowance(responses[taskId][g_i].responder, task.generatorFee);
             }
+            else {
+                platformFeeBalance += task.generatorFee;
+            }
         }
-        platformFeeBalance += restGenerationFees;
     }
 
     /// @notice Withdraw the platform fees & along with remaining fees within the contract.
