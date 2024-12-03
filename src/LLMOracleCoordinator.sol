@@ -398,8 +398,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
             // ignore lower outliers
             if ((generationScores[g_i] * Statistics.SCALING_FACTOR) + generationDeviationFactor * stddev >= mean) {
                 _increaseAllowance(responses[taskId][g_i].responder, task.generatorFee);
-            }
-            else {
+            } else {
                 platformFeeBalance += task.generatorFee;
             }
         }
