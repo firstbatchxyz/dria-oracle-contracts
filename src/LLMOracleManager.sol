@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.20;
 
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-
 import {LLMOracleTaskParameters} from "./LLMOracleTask.sol";
 
 /// @title LLM Oracle Manager
 /// @notice Holds the configuration for the LLM Oracle, such as allowed bounds on difficulty,
 /// number of generations & validations, and fee settings.
 
-contract LLMOracleManager is OwnableUpgradeable {
+abstract contract LLMOracleManager is OwnableUpgradeable {
     /*//////////////////////////////////////////////////////////////
                                  ERRORS
     //////////////////////////////////////////////////////////////*/
@@ -30,8 +29,6 @@ contract LLMOracleManager is OwnableUpgradeable {
     /// @dev When scaled with difficulty & number of validations, we denote it as `validatorFee`.
     uint256 public validationFee;
 
-    /// @notice The deviation factor for the validation scores.
-    uint64 public validationDeviationFactor;
     /// @notice The deviation factor for the generation scores.
     uint64 public generationDeviationFactor;
 
@@ -40,22 +37,31 @@ contract LLMOracleManager is OwnableUpgradeable {
     /// @notice Maximums for oracle parameters.
     LLMOracleTaskParameters maximumParameters;
 
+    /// @notice The minimum score for a generation.
+    uint256 public minScore;
+    /// @notice The maximum score for a generation.
+    uint256 public maxScore;
+
     /*//////////////////////////////////////////////////////////////
                                 UPGRADABLE
     //////////////////////////////////////////////////////////////*/
 
     /// @notice Initialize the contract.
-    function __LLMOracleManager_init(uint256 _platformFee, uint256 _generationFee, uint256 _validationFee)
-        internal
-        onlyInitializing
-    {
+    function __LLMOracleManager_init(
+        uint256 _platformFee,
+        uint256 _generationFee,
+        uint256 _validationFee,
+        uint256 _minScore,
+        uint256 _maxScore
+    ) internal onlyInitializing {
+        generationDeviationFactor = 1;
+
         minimumParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 0});
         maximumParameters = LLMOracleTaskParameters({difficulty: 10, numGenerations: 10, numValidations: 10});
 
-        validationDeviationFactor = 2;
-        generationDeviationFactor = 1;
-
         setFees(_platformFee, _generationFee, _validationFee);
+        minScore = _minScore;
+        maxScore = _maxScore;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -88,6 +94,9 @@ contract LLMOracleManager is OwnableUpgradeable {
             revert InvalidParameterRange(
                 parameters.numValidations, minimumParameters.numValidations, maximumParameters.numValidations
             );
+        }
+        if (parameters.numValidations != 0 && parameters.numGenerations < 2) {
+            revert InvalidParameterRange(parameters.numGenerations, 2, maximumParameters.numGenerations);
         }
         _;
     }
@@ -132,15 +141,10 @@ contract LLMOracleManager is OwnableUpgradeable {
         maximumParameters = maximums;
     }
 
-    /// @notice Update deviation factors.
+    /// @notice Update generation deviation factor.
     /// @dev Provide the same value to keep it unchanged.
     /// @param _generationDeviationFactor The new generation deviation factor.
-    /// @param _validationDeviationFactor The new validation deviation factor.
-    function setDeviationFactors(uint64 _generationDeviationFactor, uint64 _validationDeviationFactor)
-        public
-        onlyOwner
-    {
+    function setGenerationDeviationFactor(uint64 _generationDeviationFactor) public onlyOwner {
         generationDeviationFactor = _generationDeviationFactor;
-        validationDeviationFactor = _validationDeviationFactor;
     }
 }

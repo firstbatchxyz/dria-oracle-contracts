@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.20;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {Whitelist} from "./Whitelist.sol";
 
 /// @notice The type of Oracle.
 enum LLMOracleKind {
@@ -14,7 +14,7 @@ enum LLMOracleKind {
 /// @title LLM Oracle Registry
 /// @notice Holds the addresses that are eligible to respond to LLM requests.
 /// @dev There may be several types of oracle kinds, and each require their own stake.
-contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
+contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
     /*//////////////////////////////////////////////////////////////
                                  EVENTS
     //////////////////////////////////////////////////////////////*/
@@ -38,6 +38,9 @@ contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
     /// @notice Insufficient stake amount during registration.
     error InsufficientFunds();
 
+    /// @notice Minimum waiting time has not passed for unregistering.
+    error TooEarlyToUnregister(uint256 minTimeToWait);
+
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -48,8 +51,16 @@ contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
     /// @notice Stake amount to be registered as an Oracle that can serve validation requests.
     uint256 public validatorStakeAmount;
 
+    /// @notice Minimum registration time for oracles.
+    /// @dev This is to prevent spamming the registry mechanism.
+    /// @dev If the oracle wants to unregister, they have to wait at least this time before doing so.
+    uint256 public minRegistrationTime;
+
     /// @notice Registrations per address & kind. If amount is 0, it is not registered.
     mapping(address oracle => mapping(LLMOracleKind => uint256 amount)) public registrations;
+
+    /// @notice Registered times per oracle.
+    mapping(address oracle => mapping(LLMOracleKind => uint256 registeredTime)) public registrationTimes;
 
     /// @notice Token used for staking.
     ERC20 public token;
@@ -74,13 +85,16 @@ contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /// @dev Sets the owner to be the deployer, sets initial stake amount.
-    function initialize(uint256 _generatorStakeAmount, uint256 _validatorStakeAmount, address _token)
-        public
-        initializer
-    {
+    function initialize(
+        uint256 _generatorStakeAmount,
+        uint256 _validatorStakeAmount,
+        address _token,
+        uint256 _minRegistrationTime
+    ) public initializer {
         __Ownable_init(msg.sender);
         generatorStakeAmount = _generatorStakeAmount;
         validatorStakeAmount = _validatorStakeAmount;
+        minRegistrationTime = _minRegistrationTime;
         token = ERC20(_token);
     }
 
@@ -92,6 +106,12 @@ contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
     /// @dev Reverts if the user is already registered or has insufficient funds.
     /// @param kind The kind of Oracle to unregister.
     function register(LLMOracleKind kind) public {
+        if (kind == LLMOracleKind.Validator) {
+            if (!whitelisted[msg.sender]) {
+                revert NotWhitelisted(msg.sender);
+            }
+        }
+
         uint256 amount = getStakeAmount(kind);
 
         // ensure the user is not already registered
@@ -107,6 +127,8 @@ contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
 
         // register the user
         registrations[msg.sender][kind] = amount;
+        registrationTimes[msg.sender][kind] = block.timestamp;
+
         emit Registered(msg.sender, kind);
     }
 
@@ -122,8 +144,19 @@ contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
             revert NotRegistered(msg.sender);
         }
 
+        // remove validator from whitelist
+        if (kind == LLMOracleKind.Validator && whitelisted[msg.sender]) {
+            whitelisted[msg.sender] = false;
+        }
+
+        // enough time has not passed to unregister
+        if (block.timestamp - registrationTimes[msg.sender][kind] < minRegistrationTime) {
+            revert TooEarlyToUnregister(block.timestamp - registrationTimes[msg.sender][kind]);
+        }
+
         // unregister the user
         delete registrations[msg.sender][kind];
+        delete registrationTimes[msg.sender][kind];
         emit Unregistered(msg.sender, kind);
 
         // approve its stake back
@@ -144,6 +177,6 @@ contract LLMOracleRegistry is OwnableUpgradeable, UUPSUpgradeable {
 
     /// @notice Check if an Oracle is registered.
     function isRegistered(address user, LLMOracleKind kind) public view returns (bool) {
-        return registrations[user][kind] != 0;
+        return registrations[user][kind] >= getStakeAmount(kind);
     }
 }

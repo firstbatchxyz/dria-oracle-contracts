@@ -1,9 +1,11 @@
 -include .env
 
-.PHONY: build test local-key base-sepolia-key deploy anvil install update doc
+.PHONY: build test local-key base-sepolia-key deploy update
 
 # Capture the network name
 network := $(word 2, $(MAKECMDGOALS))
+contractAddress := $(word 3, $(MAKECMDGOALS))
+contractName := $(word 4, $(MAKECMDGOALS))
 
 # Default to forked base-sepolia network
 KEY_NAME := local-key
@@ -18,6 +20,10 @@ endif
 install:
 	forge install foundry-rs/forge-std --no-commit && forge install firstbatchxyz/dria-oracle-contracts --no-commit && forge install OpenZeppelin/openzeppelin-contracts --no-commit && forge install OpenZeppelin/openzeppelin-foundry-upgrades --no-commit && forge install OpenZeppelin/openzeppelin-contracts-upgradeable --no-commit
 
+# Update modules
+update:
+	forge update
+	
 # Build the contracts
 build:
 	forge clean && forge build
@@ -26,9 +32,9 @@ build:
 snapshot:
 	forge snapshot
 
-# Test the contracts on forked base-sepolia network
+# Test the contracts on local
 test:
-	forge clean && forge test --fork-url $(BASE_TEST_RPC_URL)
+	forge clean && forge test 
 
 anvil:
 	anvil --fork-url $(BASE_TEST_RPC_URL)
@@ -45,7 +51,19 @@ deploy:
 doc:
 	forge doc
 
-# TODO: forge-verify
+# Format code
+fmt:
+	forge fmt
 
-# Prevent make from interpreting the network name as a target
+# Coverage
+cov:
+	forge coverage --no-match-coverage "(test|mock|script)"
+
+# Verify contract on blockscout
+verify:
+	forge verify-contract $(contractAddress) src/$(contractName).sol:$(contractName) --verifier blockscout --verifier-url https://base-sepolia.blockscout.com/api/
+
+# Prevent make from interpreting params as a target
 $(eval $(network):;@:)
+$(eval $(contractAddress):;@:)
+$(eval $(contractName):;@:)

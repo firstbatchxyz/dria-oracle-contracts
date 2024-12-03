@@ -1,29 +1,27 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Vm} from "forge-std/Vm.sol";
-import {Helper} from "./Helper.t.sol";
 import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {Helper} from "./Helper.t.sol";
 
 import {LLMOracleTask, LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
 import {LLMOracleCoordinator} from "../src/LLMOracleCoordinator.sol";
-
+import {Whitelist} from "../src/Whitelist.sol";
 import {WETH9} from "./WETH9.sol";
 
 contract LLMOracleCoordinatorTest is Helper {
     address dummy = vm.addr(20);
     address requester = vm.addr(21);
-
     bytes output = "0x";
 
-    // TODO: deploy contracts via deploy script instead to remove deployment modifier from all test files
     modifier deployment() {
         vm.startPrank(dria);
         address registryProxy = Upgrades.deployUUPSProxy(
             "LLMOracleRegistry.sol",
             abi.encodeCall(
-                LLMOracleRegistry.initialize, (stakes.generatorStakeAmount, stakes.validatorStakeAmount, address(token))
+                LLMOracleRegistry.initialize,
+                (stakes.generatorStakeAmount, stakes.validatorStakeAmount, address(token), minRegistrationTime)
             )
         );
 
@@ -35,7 +33,15 @@ contract LLMOracleCoordinatorTest is Helper {
             "LLMOracleCoordinator.sol",
             abi.encodeCall(
                 LLMOracleCoordinator.initialize,
-                (address(oracleRegistry), address(token), fees.platformFee, fees.generationFee, fees.validationFee)
+                (
+                    address(oracleRegistry),
+                    address(token),
+                    fees.platformFee,
+                    fees.generationFee,
+                    fees.validationFee,
+                    minScore,
+                    maxScore
+                )
             )
         );
         oracleCoordinator = LLMOracleCoordinator(coordinatorProxy);
@@ -46,6 +52,7 @@ contract LLMOracleCoordinatorTest is Helper {
         vm.label(address(this), "LLMOracleCoordinatorTest");
         vm.label(address(oracleRegistry), "LLMOracleRegistry");
         vm.label(address(oracleCoordinator), "LLMOracleCoordinator");
+        vm.label(address(token), "WETH9");
         _;
     }
 
@@ -69,22 +76,7 @@ contract LLMOracleCoordinatorTest is Helper {
         _;
     }
 
-    function test_Deployment() external fund deployment {
-        assertEq(oracleRegistry.generatorStakeAmount(), stakes.generatorStakeAmount);
-        assertEq(oracleRegistry.validatorStakeAmount(), stakes.validatorStakeAmount);
-
-        assertEq(address(oracleRegistry.token()), address(token));
-        assertEq(oracleRegistry.owner(), dria);
-
-        // check the coordinator variables
-        assertEq(address(oracleCoordinator.feeToken()), address(token));
-        assertEq(address(oracleCoordinator.registry()), address(oracleRegistry));
-        assertEq(oracleCoordinator.platformFee(), fees.platformFee);
-        assertEq(oracleCoordinator.generationFee(), fees.generationFee);
-        assertEq(oracleCoordinator.validationFee(), fees.validationFee);
-    }
-
-    /// @notice Test the registerOracles modifier to check if the oracles are registered
+    /// @dev To check if the oracles are registered
     function test_RegisterOracles() external fund deployment registerOracles {
         for (uint256 i; i < generators.length; i++) {
             assertTrue(oracleRegistry.isRegistered(generators[i], LLMOracleKind.Generator));
@@ -95,7 +87,8 @@ contract LLMOracleCoordinatorTest is Helper {
         }
     }
 
-    // @notice Test without validation
+    // @notice Request without validation
+    /// @dev 2 generations only
     function test_WithoutValidation()
         external
         fund
@@ -120,7 +113,6 @@ contract LLMOracleCoordinatorTest is Helper {
         (address _responder,,, bytes memory _output,) = oracleCoordinator.responses(1, responseId);
         assertEq(_responder, generators[0]);
         assertEq(output, _output);
-        responseId++;
 
         // try responding again (should fail)
         uint256 genNonce0 = mineNonce(generators[0], 1);
@@ -131,6 +123,11 @@ contract LLMOracleCoordinatorTest is Helper {
         // second responder responds
         safeRespond(generators[1], output, 1);
         responseId++;
+
+        // verify the response
+        (_responder,,, _output,) = oracleCoordinator.responses(1, responseId);
+        assertEq(_responder, generators[1]);
+        assertEq(output, _output);
 
         // try to respond after task completion (should fail)
         uint256 genNonce1 = mineNonce(generators[1], 1);
@@ -158,15 +155,15 @@ contract LLMOracleCoordinatorTest is Helper {
         oracleCoordinator.respond(900, genNonce0, output, metadata);
     }
 
-    // @notice Test with single validation
-    function test_WithValidation()
+    /// @notice Try to validate without being whitelisted
+    ///@dev 2 generations + 2 validations
+    function test_RevertWhen_ValidateWithoutWhitelist()
         external
         fund
         setOracleParameters(1, 2, 2)
         deployment
         registerOracles
         safeRequest(requester, 1)
-        checkAllowances
     {
         // generators respond
         for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
@@ -174,7 +171,39 @@ contract LLMOracleCoordinatorTest is Helper {
         }
 
         // set scores
-        scores = [1 ether, 1 ether];
+        scores = [1, 5];
+
+        // remove validator from whitelist before trying to validate
+        vm.prank(dria);
+        oracleRegistry.removeFromWhitelist(validators[0]);
+        assertFalse(oracleRegistry.whitelisted(validators[0]));
+
+        // try to validate without being whitelisted
+        uint256 valNonce = mineNonce(validators[0], 1);
+        vm.expectRevert(abi.encodeWithSelector(Whitelist.NotWhitelisted.selector, validators[0]));
+        vm.prank(validators[0]);
+        oracleCoordinator.validate(1, valNonce, scores, metadata);
+    }
+
+    // @notice Request with 2 generations + 2 validations
+    function test_WithValidation()
+        external
+        fund
+        setOracleParameters(1, 2, 2)
+        deployment
+        registerOracles
+        safeRequest(requester, 1)
+        addValidatorsToWhitelist
+        checkAllowances
+    {
+        uint256 balanceBefore = token.balanceOf(dria);
+        // generators respond
+        for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
+            safeRespond(generators[i], output, 1);
+        }
+
+        // set scores
+        scores = [15, 20];
 
         uint256 genNonce = mineNonce(generators[2], 1);
         // ensure third generator can't respond after completion
@@ -193,6 +222,7 @@ contract LLMOracleCoordinatorTest is Helper {
         safeValidate(validators[0], 1);
 
         uint256 valNonce = mineNonce(validators[0], 1);
+
         // ensure first validator can't validate twice
         vm.expectRevert(abi.encodeWithSelector(LLMOracleCoordinator.AlreadyResponded.selector, 1, validators[0]));
         vm.prank(validators[0]);
@@ -205,38 +235,110 @@ contract LLMOracleCoordinatorTest is Helper {
         (,,, LLMOracleTask.TaskStatus status,,,,,) = oracleCoordinator.requests(1);
         assertEq(uint8(status), uint8(LLMOracleTask.TaskStatus.Completed));
 
-        // should see generation scores
+        // check reponses
         for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
-            (,, uint256 responseScore,,) = oracleCoordinator.responses(1, i);
-            assertEq(responseScore, 1 ether);
+            (address responder,, uint256 score, bytes memory out, bytes memory meta) = oracleCoordinator.responses(1, i);
+            assertEq(responder, generators[i]);
+            assertEq(out, output);
+            assertEq(meta, metadata);
+            assertEq(score, scores[i] * 1e18);
         }
+
+        // withdraw platform fees
+        vm.prank(dria);
+        oracleCoordinator.withdrawPlatformFees();
+        uint256 balanceAfter = token.balanceOf(dria);
+
+        assertEq(balanceAfter - balanceBefore, fees.platformFee);
     }
 
     /// @dev Oracle cannot validate if already participated as generator
+    /// @dev 1 generation + 1 validation
     function test_ValidatorIsGenerator()
         external
         fund
-        setOracleParameters(1, 1, 1)
+        setOracleParameters(1, 2, 1)
         deployment
         registerOracles
         safeRequest(requester, 1)
     {
+        vm.prank(dria);
+        oracleRegistry.addToWhitelist(generators);
+        assertTrue(oracleRegistry.whitelisted(generators[0]));
+
         // register generators[0] as a validator as well
         vm.prank(generators[0]);
         oracleRegistry.register(LLMOracleKind.Validator);
 
         // respond as generator
-        for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
-            safeRespond(generators[i], output, 1);
-        }
+        safeRespond(generators[0], output, 1);
+        safeRespond(generators[1], output, 1);
 
-        // set scores for (setOracleParameters(1, 1, 1))
-        scores = [1 ether];
+        // set scores
+        scores = [30, 27];
 
         // try to validate after responding as generator
         uint256 nonce = mineNonce(generators[0], 1);
         vm.prank(generators[0]);
         vm.expectRevert(abi.encodeWithSelector(LLMOracleCoordinator.AlreadyResponded.selector, 1, generators[0]));
         oracleCoordinator.validate(1, nonce, scores, metadata);
+    }
+
+    // @notice Request with 4 generation + 1 validation
+    // @dev Not every generator gets fee
+    function test_WitValidation_NotEveryGeneratorGetFee()
+        external
+        fund
+        setOracleParameters(1, 4, 1)
+        deployment
+        registerOracles
+        safeRequest(requester, 1)
+        addValidatorsToWhitelist
+    {
+        uint256 balanceBefore = token.balanceOf(dria);
+
+        uint256[] memory generatorAllowancesBefore = new uint256[](oracleParameters.numGenerations);
+
+        // get generator allowances before function execution
+        for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
+            generatorAllowancesBefore[i] = token.allowance(address(oracleCoordinator), generators[i]);
+        }
+
+        // generators respond
+        for (uint256 i = 0; i < oracleParameters.numGenerations; i++) {
+            safeRespond(generators[i], output, 1);
+        }
+
+        // set scores
+        // last generator doesn't get fee
+        scores = [200, 140, 180, 10];
+
+        // validator validate
+        safeValidate(validators[0], 1);
+
+        // check the task's status is Completed
+        (,,, LLMOracleTask.TaskStatus status, uint256 generatorFee,,,,) = oracleCoordinator.requests(1);
+        assertEq(uint8(status), uint8(LLMOracleTask.TaskStatus.Completed));
+
+        for (uint256 i; i < oracleParameters.numGenerations; i++) {
+            uint256 generatorAllowanceAfter = token.allowance(address(oracleCoordinator), generators[i]);
+            // last generator doesn't get fee
+            if (i == oracleParameters.numGenerations - 1) {
+                assertEq(generatorAllowanceAfter - generatorAllowancesBefore[i], 0);
+            } else {
+                assertEq(generatorAllowanceAfter - generatorAllowancesBefore[i], generatorFee);
+            }
+        }
+
+        // withdraw platform fees
+        vm.prank(dria);
+        oracleCoordinator.withdrawPlatformFees();
+
+        // get balance of dria after withdraw
+        uint256 balanceAfter = token.balanceOf(dria);
+        // get generator fee
+        (,,,, uint256 genFee,,,,) = oracleCoordinator.requests(1);
+        // only 1 generator doesn't get fee
+        assertEq(balanceAfter - balanceBefore, fees.platformFee + genFee);
     }
 }

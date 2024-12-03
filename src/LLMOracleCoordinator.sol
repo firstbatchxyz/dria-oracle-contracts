@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.20;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -8,6 +8,7 @@ import {LLMOracleRegistry, LLMOracleKind} from "./LLMOracleRegistry.sol";
 import {LLMOracleTask, LLMOracleTaskParameters} from "./LLMOracleTask.sol";
 import {LLMOracleManager} from "./LLMOracleManager.sol";
 import {Statistics} from "./Statistics.sol";
+import {Whitelist} from "./Whitelist.sol";
 
 /// @title LLM Oracle Coordinator
 /// @notice Responsible for coordinating the Oracle responses to LLM generation requests.
@@ -54,6 +55,9 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
     /// @notice The oracle has already responded to this task.
     error AlreadyResponded(uint256 taskId, address oracle);
 
+    /// @notice Input is Empty.
+    error InvalidInput();
+
     /*//////////////////////////////////////////////////////////////
                                  STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -73,6 +77,8 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
     mapping(uint256 taskId => TaskResponse[]) public responses;
     /// @notice LLM generation response validations.
     mapping(uint256 taskId => TaskValidation[]) public validations;
+    /// @notice To track the platform fees to be able to owner withdraw the correct amount of fee.
+    uint256 public platformFeeBalance;
 
     /*//////////////////////////////////////////////////////////////
                                  MODIFIERS
@@ -81,6 +87,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
     /// @notice Reverts if `msg.sender` is not a registered oracle.
     modifier onlyRegistered(LLMOracleKind kind) {
         if (!registry.isRegistered(msg.sender, kind)) {
+            // when the oracle is not registered or didn't stake enough funds
             revert NotRegistered(msg.sender);
         }
         _;
@@ -90,6 +97,13 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
     modifier onlyAtStatus(uint256 taskId, TaskStatus status) {
         if (requests[taskId].status != status) {
             revert InvalidTaskStatus(taskId, requests[taskId].status, status);
+        }
+        _;
+    }
+
+    modifier isWhiteListed(address account) {
+        if (!registry.whitelisted(account)) {
+            revert Whitelist.NotWhitelisted(account);
         }
         _;
     }
@@ -127,10 +141,12 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         address _feeToken,
         uint256 _platformFee,
         uint256 _generationFee,
-        uint256 _validationFee
+        uint256 _validationFee,
+        uint256 _minScore,
+        uint256 _maxScore
     ) public initializer {
         __Ownable_init(msg.sender);
-        __LLMOracleManager_init(_platformFee, _generationFee, _validationFee);
+        __LLMOracleManager_init(_platformFee, _generationFee, _validationFee, _minScore, _maxScore);
         registry = LLMOracleRegistry(_oracleRegistry);
         feeToken = ERC20(_feeToken);
         nextTaskId = 1;
@@ -156,6 +172,10 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
     ) public onlyValidParameters(parameters) returns (uint256) {
         (uint256 totalfee, uint256 generatorFee, uint256 validatorFee) = getFee(parameters);
 
+        if (input.length == 0) {
+            revert InvalidInput();
+        }
+
         // check allowance requirements
         uint256 allowance = feeToken.allowance(msg.sender, address(this));
         if (allowance < totalfee) {
@@ -169,6 +189,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         }
 
         // transfer tokens
+        platformFeeBalance += platformFee;
         feeToken.transferFrom(msg.sender, address(this), totalfee);
 
         // increment the task id for later tasks & emit task request event
@@ -262,12 +283,20 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         public
         onlyRegistered(LLMOracleKind.Validator)
         onlyAtStatus(taskId, TaskStatus.PendingValidation)
+        isWhiteListed(msg.sender)
     {
         TaskRequest storage task = requests[taskId];
 
         // ensure there is a score for each generation
         if (scores.length != task.parameters.numGenerations) {
             revert InvalidValidation(taskId, msg.sender);
+        }
+
+        // ensure scores are within the range
+        for (uint256 i = 0; i < scores.length; i++) {
+            if (scores[i] > maxScore || scores[i] < minScore) {
+                revert InvalidParameterRange(scores[i], maxScore, minScore);
+            }
         }
 
         // ensure validator did not participate in generation
@@ -313,7 +342,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
     /// @param nonce The candidate proof-of-work nonce.
     function assertValidNonce(uint256 taskId, TaskRequest storage task, uint256 nonce) internal view {
         bytes memory message = abi.encodePacked(taskId, task.input, task.requester, msg.sender, nonce);
-        if (uint256(keccak256(message)) > type(uint256).max >> uint256(task.parameters.difficulty)) {
+        if (uint256(keccak256(message)) >= type(uint256).max >> uint256(task.parameters.difficulty)) {
             revert InvalidNonce(taskId, nonce);
         }
     }
@@ -340,8 +369,9 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
             uint256 innerSum = 0;
             uint256 innerCount = 0;
             for (uint256 v_i = 0; v_i < task.parameters.numValidations; ++v_i) {
-                uint256 score = scores[v_i];
-                if ((score >= _mean - _stddev) && (score <= _mean + _stddev)) {
+                // score is multiplied by 1e18 to be able to compare the mean and stddev
+                uint256 score = scores[v_i] * Statistics.SCALING_FACTOR;
+                if ((score + _stddev >= _mean) && (score <= _mean + _stddev)) {
                     innerSum += score;
                     innerCount++;
 
@@ -366,15 +396,18 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         (uint256 stddev, uint256 mean) = Statistics.stddev(generationScores);
         for (uint256 g_i = 0; g_i < task.parameters.numGenerations; g_i++) {
             // ignore lower outliers
-            if (generationScores[g_i] >= mean - generationDeviationFactor * stddev) {
+            if ((generationScores[g_i] * Statistics.SCALING_FACTOR) + generationDeviationFactor * stddev >= mean) {
                 _increaseAllowance(responses[taskId][g_i].responder, task.generatorFee);
+            } else {
+                platformFeeBalance += task.generatorFee;
             }
         }
     }
 
     /// @notice Withdraw the platform fees & along with remaining fees within the contract.
     function withdrawPlatformFees() public onlyOwner {
-        feeToken.transfer(owner(), feeToken.balanceOf(address(this)));
+        feeToken.transfer(owner(), platformFeeBalance);
+        platformFeeBalance = 0;
     }
 
     /// @notice Returns the responses to a given taskId.

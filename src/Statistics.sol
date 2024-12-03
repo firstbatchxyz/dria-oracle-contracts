@@ -1,28 +1,45 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity ^0.8.22;
+pragma solidity ^0.8.20;
 
-/// @notice Simple statistic library for uint256 arrays, numbers are treat as fixed-precision floats.
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
+
+/// @notice Simple statistic library for uint256 arrays.
 library Statistics {
+    error ComputeError();
+
+    uint256 constant SCALING_FACTOR = 1e18;
+
     /// @notice Compute the mean of the data.
     /// @param data The data to compute the mean for.
     function avg(uint256[] memory data) internal pure returns (uint256 ans) {
         uint256 sum = 0;
         for (uint256 i = 0; i < data.length; i++) {
-            sum += data[i];
+            (bool success, uint256 newSum) = Math.tryAdd(data[i], sum);
+            if (!success) {
+                revert ComputeError();
+            }
+            sum = newSum;
         }
-        ans = sum / data.length;
+        ans = Math.mulDiv(sum, SCALING_FACTOR, data.length);
     }
 
     /// @notice Compute the variance of the data.
     /// @param data The data to compute the variance for.
     function variance(uint256[] memory data) internal pure returns (uint256 ans, uint256 mean) {
         mean = avg(data);
+
         uint256 sum = 0;
         for (uint256 i = 0; i < data.length; i++) {
-            uint256 diff = data[i] - mean;
-            sum += diff * diff;
+            uint256 scaledData = data[i] * SCALING_FACTOR; // scale the data point to match the scaled mean
+            int256 diff = int256(scaledData) - int256(mean);
+            sum += SignedMath.abs(diff * diff);
         }
-        ans = sum / data.length;
+        (bool success, uint256 divisor) = Math.tryMul(data.length, SCALING_FACTOR);
+        if (!success) {
+            revert ComputeError();
+        }
+        ans = Math.mulDiv(sum, 1, divisor);
     }
 
     /// @notice Compute the standard deviation of the data.
@@ -31,18 +48,10 @@ library Statistics {
     function stddev(uint256[] memory data) internal pure returns (uint256 ans, uint256 mean) {
         (uint256 _variance, uint256 _mean) = variance(data);
         mean = _mean;
-        ans = sqrt(_variance);
-    }
-
-    /// @notice Compute the square root of a number.
-    /// @dev Uses Babylonian method.
-    /// @param x The number to compute the square root for.
-    function sqrt(uint256 x) internal pure returns (uint256 y) {
-        uint256 z = (x + 1) / 2;
-        y = x;
-        while (z < y) {
-            y = z;
-            z = (x / z + z) / 2;
+        (bool success, uint256 scaledVariance) = Math.tryMul(_variance, SCALING_FACTOR);
+        if (!success) {
+            revert ComputeError();
         }
+        ans = Math.sqrt(scaledVariance);
     }
 }

@@ -1,22 +1,61 @@
-# LLM Oracles
+# LLM Oracle
 
-LLM Oracle is a **Decentralized Protocol** for **executing AI tasks on-chain**. It processes user-provided inputs through a network of nodes using predefined models, delivering outputs and metadata for use in blockchain applications. By combining decentralized infrastructure with advanced AI processing, LLM Oracle bridges the gap between blockchain and AI, enabling reliable and trustless computation​.
+This document provides instructions for LLM contracts using Foundry.
 
-## Compile
+## Test
 
-Compile the contracts with:
+Compile the contracts:
 
 ```sh
 make build
 ```
-
-## Test
 
 Run tests on local:
 
 ```sh
 make test
 ```
+
+## Format
+
+Format code with:
+
+```sh
+make fmt
+```
+
+## Update
+
+Update modules with:
+
+```sh
+make update
+```
+
+## Coverage
+
+Check coverages with:
+
+```sh
+bash coverage.sh
+```
+or to see summarized coverages on terminal:
+
+```sh
+make cov
+```
+
+You can see coverages under the coverage directory.
+
+## Storage Layout
+
+Get storage layout with:
+
+```sh
+bash storage.sh
+```
+
+You can see storage layouts under the storage directory.
 
 ## Deployment
 
@@ -75,39 +114,6 @@ make deploy base-sepolia
 
 You can see deployed contract addresses under the `deployment/<chainid>.json`
 
-## Verify Contract
-
-Verify contract manually with:
-
-```sh
-make verify base-sepolia <contractAddress> <contractName>
-```
-
-## Coverage
-
-Check coverages with:
-
-```sh
-bash coverage.sh
-```
-or to see summarized coverages on terminal:
-
-```sh
-make cov
-```
-
-You can see coverages under the coverage directory.
-
-## Storage Layout
-
-Get storage layout with:
-
-```sh
-bash storage.sh
-```
-
-You can see storage layouts under the storage directory.
-
 ## Gas Snapshot
 
 Take the gas snapshot with:
@@ -130,14 +136,6 @@ make fmt
 
 ```sh
 make doc
-```
-
-## Update
-
-Update modules with:
-
-```sh
-make update
 ```
 
 You can see the documentation under the `docs/` directory.
