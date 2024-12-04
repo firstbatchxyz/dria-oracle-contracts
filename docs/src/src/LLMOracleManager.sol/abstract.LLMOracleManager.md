@@ -1,5 +1,5 @@
 # LLMOracleManager
-[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/25076f552be543b6671d41de960346e5a3ad8aaf/src/LLMOracleManager.sol)
+[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/54ba49f9d68ffe125f895dc1163a0d8eafbad503/src/LLMOracleManager.sol)
 
 **Inherits:**
 OwnableUpgradeable
@@ -67,6 +67,24 @@ LLMOracleTaskParameters maximumParameters;
 ```
 
 
+### minScore
+The minimum score for a generation.
+
+
+```solidity
+uint256 public minScore;
+```
+
+
+### maxScore
+The maximum score for a generation.
+
+
+```solidity
+uint256 public maxScore;
+```
+
+
 ## Functions
 ### __LLMOracleManager_init
 
@@ -74,9 +92,13 @@ Initialize the contract.
 
 
 ```solidity
-function __LLMOracleManager_init(uint256 _platformFee, uint256 _generationFee, uint256 _validationFee)
-    internal
-    onlyInitializing;
+function __LLMOracleManager_init(
+    uint256 _platformFee,
+    uint256 _generationFee,
+    uint256 _validationFee,
+    uint256 _minScore,
+    uint256 _maxScore
+) internal onlyInitializing;
 ```
 
 ### onlyValidParameters

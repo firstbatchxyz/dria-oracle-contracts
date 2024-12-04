@@ -1,5 +1,5 @@
 # LLMOracleCoordinator
-[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/25076f552be543b6671d41de960346e5a3ad8aaf/src/LLMOracleCoordinator.sol)
+[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/54ba49f9d68ffe125f895dc1163a0d8eafbad503/src/LLMOracleCoordinator.sol)
 
 **Inherits:**
 [LLMOracleTask](/src/LLMOracleTask.sol/interface.LLMOracleTask.md), [LLMOracleManager](/src/LLMOracleManager.sol/abstract.LLMOracleManager.md), UUPSUpgradeable
@@ -139,7 +139,9 @@ function initialize(
     address _feeToken,
     uint256 _platformFee,
     uint256 _generationFee,
-    uint256 _validationFee
+    uint256 _validationFee,
+    uint256 _minScore,
+    uint256 _maxScore
 ) public initializer;
 ```
 **Parameters**
@@ -151,6 +153,8 @@ function initialize(
 |`_platformFee`|`uint256`|The initial platform fee for each LLM generation.|
 |`_generationFee`|`uint256`|The initial base fee for LLM generation.|
 |`_validationFee`|`uint256`|The initial base fee for response validation.|
+|`_minScore`|`uint256`||
+|`_maxScore`|`uint256`||
 
 
 ### request

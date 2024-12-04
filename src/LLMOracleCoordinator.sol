@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {LLMOracleRegistry, LLMOracleKind} from "./LLMOracleRegistry.sol";
 import {LLMOracleTask, LLMOracleTaskParameters} from "./LLMOracleTask.sol";

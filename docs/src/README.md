@@ -1,61 +1,32 @@
-# LLM Oracle
+# LLM Oracles
 
-This document provides instructions for LLM contracts using Foundry.
+LLM Oracle is a **Decentralized Protocol** for **executing AI tasks on-chain**. It processes user-provided inputs through a network of nodes using predefined models, delivering outputs and metadata for use in blockchain applications. By combining decentralized infrastructure with advanced AI processing, LLM Oracle bridges the gap between blockchain and AI, enabling reliable and trustless computation​.
 
-## Test
+## Compile
 
-Compile the contracts:
+Compile the contracts with:
 
 ```sh
-make build
+forge build
 ```
+
+> [!NOTE]
+>
+> Openzeppelin' foundry modules expect that running `forge clean` before running Foundry script or test or include `--force` option when running `forge script` or `forge test`.
+
+## Test
 
 Run tests on local:
 
 ```sh
-make test
+forge test
 ```
 
-## Format
-
-Format code with:
+or on any other evm chain:
 
 ```sh
-make fmt
+forge test --rpc-url <CHAIN_RPC_URL>
 ```
-
-## Update
-
-Update modules with:
-
-```sh
-make update
-```
-
-## Coverage
-
-Check coverages with:
-
-```sh
-bash coverage.sh
-```
-or to see summarized coverages on terminal:
-
-```sh
-make cov
-```
-
-You can see coverages under the coverage directory.
-
-## Storage Layout
-
-Get storage layout with:
-
-```sh
-bash storage.sh
-```
-
-You can see storage layouts under the storage directory.
 
 ## Deployment
 
@@ -70,13 +41,12 @@ Import your `PUBLIC_KEY` and `ETHERSCAN_API_KEY` to env file.
 Create keystores for deployment. [See more for keystores](https://eips.ethereum.org/EIPS/eip-2335)
 
 ```sh
-make local-key
+cast wallet import <FILE_NAME_OF_YOUR_KEYSTORE> --interactive
 ```
-
-or for Base Sepolia
+You can see your wallets with:
 
 ```sh
-make base-sepolia-key
+cast wallet list
 ```
 
 > [!NOTE]
@@ -89,37 +59,71 @@ Enter your private key (associated with the public key you added to env file) an
 
 > [!NOTE]
 >
-> If you want to deploy contracts on localhost please provide localhost public key for the command above.
+> If you want to deploy contracts on localhost please provide local public key for the command above.
 
 **Step 4.** Required only for local deployment.
 
 Start a local node with:
 
 ```sh
-make anvil
+anvil
 ```
 
 **Step 5.**
-Deploy the contracts on localhost (forked Base Sepolia by default) using Deploy script:
+Deploy the contracts on local with:
 
 ```sh
-make deploy
+forge script ./script/Deploy.s.sol:Deploy --account <FILE_NAME_OF_YOUR_KEYSTORE> --sender <DEPLOYER_PUBLIC_KEY> --broadcast
 ```
-
-or Base Sepolia with the command below:
+or for instant verification use:
 
 ```sh
-make deploy base-sepolia
+forge script ./script/Deploy.s.sol:Deploy --account <FILE_NAME_OF_YOUR_KEYSTORE> --sender <DEPLOYER_PUBLIC_KEY> --broadcast --verify --verifier <etherscan|blockscout|sourcify>
 ```
+
+Deployment for another chain add `--rpc-url <CHAIN_URL>` to commands above.
 
 You can see deployed contract addresses under the `deployment/<chainid>.json`
+
+## Verify Contract
+
+Verify contract manually with:
+
+```sh
+forge verify-contract <CONTRACT_ADDRESS> src/$<CONTRACT_NAME>.sol:<CONTRACT_NAME> --verifier <etherscan|blockscout|sourcify>
+```
+
+## Coverage
+
+Check coverages with:
+
+```sh
+forge clean && bash coverage.sh
+```
+or to see summarized coverages on terminal:
+
+```sh
+forge coverage --no-match-coverage "(test|mock|script)"
+```
+
+You can see coverages under the coverage directory.
+
+## Storage Layout
+
+Get storage layout with:
+
+```sh
+forge clean && bash storage.sh
+```
+
+You can see storage layouts under the storage directory.
 
 ## Gas Snapshot
 
 Take the gas snapshot with:
 
 ```sh
-make snapshot
+forge clean && forge snapshot
 ```
 
 You can see the snapshot `.gas-snapshot` file in the current directory.
@@ -129,13 +133,23 @@ You can see the snapshot `.gas-snapshot` file in the current directory.
 Format code with:
 
 ```sh
-make fmt
+forge fmt
 ```
 
 ## Generate documentation
 
+Generate documentation with:
+
 ```sh
-make doc
+forge doc
+```
+
+## Update
+
+Update modules with:
+
+```sh
+forge update
 ```
 
 You can see the documentation under the `docs/` directory.

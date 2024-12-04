@@ -1,5 +1,5 @@
 # LLMOracleKind
-[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/25076f552be543b6671d41de960346e5a3ad8aaf/src/LLMOracleRegistry.sol)
+[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/54ba49f9d68ffe125f895dc1163a0d8eafbad503/src/LLMOracleRegistry.sol)
 
 The type of Oracle.
 
