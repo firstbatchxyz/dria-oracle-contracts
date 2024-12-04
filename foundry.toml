@@ -5,11 +5,13 @@ libs = ["lib"]
 test = 'test'
 script = 'script'
 cache_path  = 'cache'
+
 ffi = true
 ast = true
 build_info = true
 optimizer = true
 extra_output = ["storageLayout"]
+
 fs_permissions = [{ access = "read", path = "out" }, { access = "write", path = "deployment" }]
 remappings = [
 "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
