@@ -103,7 +103,7 @@ forge clean && bash coverage.sh
 or to see summarized coverages on terminal:
 
 ```sh
-forge coverage --no-match-coverage "(test|mock|script)"
+forge clean && forge coverage --no-match-coverage "(test|mock|script)"
 ```
 
 You can see coverages under the coverage directory.
