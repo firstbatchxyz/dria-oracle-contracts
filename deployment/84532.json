@@ -1,1 +1,10 @@
-"{  \"LLMOracleRegistry\": {    \"proxyAddr\": \"0x486fb2075b50da44557c581a5fcccd8e16c0a5b6\",    \"implAddr\": \"0xd455fa4a1a2bd811adb7b5073b57d3915a0e4779\"  },  \"LLMOracleCoordinator\": {    \"proxyAddr\": \"0x548a561721d4b20028de7efd3dd30fff83f097c0\",    \"implAddr\": \"0xba0ce19483eb672079327b2599b1c7fb836b1f78\"  }"
+{
+  "LLMOracleRegistry": {
+    "proxyAddr": "0x3cbf58a789e8f73d3d0cf6b3099bbb5619ea1d8d",
+    "implAddr": "0x92d4407bbeb368f173ed02e1a4f4d62b0685c80a"
+  },
+  "LLMOracleCoordinator": {
+    "proxyAddr": "0xe0d187376ccd0ca9ca2d5bd1517e92585bbd2033",
+    "implAddr": "0x94feef756aa9f0a036b4bc566518b58390af7fc0"
+  }
+}

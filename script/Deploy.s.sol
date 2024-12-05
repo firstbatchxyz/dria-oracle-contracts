@@ -83,7 +83,7 @@ contract Deploy is Script {
         vm.createDir(dir, true);
 
         string memory contracts = string.concat(
-            "{",
+           "{",
             '  "LLMOracleRegistry": {',
             '    "proxyAddr": "',
             Strings.toHexString(uint256(uint160(address(oracleRegistry))), 20),
@@ -99,7 +99,8 @@ contract Deploy is Script {
             '    "implAddr": "',
             Strings.toHexString(uint256(uint160(address(coordinatorImplementation))), 20),
             '"',
-            "  }"
+            "  }",
+            "}"
         );
 
         vm.writeJson(contracts, path);
