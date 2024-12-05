@@ -1,5 +1,5 @@
 # Statistics
-[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/25076f552be543b6671d41de960346e5a3ad8aaf/src/Statistics.sol)
+[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/cdb7cd04715c2a34800fff701d86f15ce85acfe1/src/Statistics.sol)
 
 Simple statistic library for uint256 arrays.
 
@@ -59,4 +59,11 @@ function stddev(uint256[] memory data) internal pure returns (uint256 ans, uint2
 |----|----|-----------|
 |`data`|`uint256[]`|The data to compute the standard deviation for.|
 
+
+## Errors
+### ComputeError
+
+```solidity
+error ComputeError();
+```
 

@@ -1,18 +1,23 @@
-# Compiler files
+# Forge files
 cache/
 out/
-storage/
 
-# coverage
-Coverage/
+# Coverage
+coverage/
 
 # Ignores development broadcast logs
 !/broadcast
 /broadcast/*/31337/
+/broadcast/*/84532/
 /broadcast/**/dry-run/
 
-# Dotenv file
-.env
+# Forge files
+cache/
+out/
+storage/
 
 # Gas snapshot
 .gas-snapshot/
+
+# Dotenv file
+.env

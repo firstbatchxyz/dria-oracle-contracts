@@ -5,16 +5,17 @@ libs = ["lib"]
 test = 'test'
 script = 'script'
 cache_path  = 'cache'
+
 ffi = true
 ast = true
 build_info = true
 optimizer = true
 extra_output = ["storageLayout"]
+
 fs_permissions = [{ access = "read", path = "out" }, { access = "write", path = "deployment" }]
 remappings = [
 "@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
-"@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
-"@openzeppelin/foundry-upgrades=lib/openzeppelin-foundry-upgrades/src",
+"@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/"
 ]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
