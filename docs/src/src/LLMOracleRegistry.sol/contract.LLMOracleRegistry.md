@@ -1,5 +1,5 @@
 # LLMOracleRegistry
-[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/25076f552be543b6671d41de960346e5a3ad8aaf/src/LLMOracleRegistry.sol)
+[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/cdb7cd04715c2a34800fff701d86f15ce85acfe1/src/LLMOracleRegistry.sol)
 
 **Inherits:**
 [Whitelist](/src/Whitelist.sol/abstract.Whitelist.md), UUPSUpgradeable
@@ -31,6 +31,10 @@ uint256 public validatorStakeAmount;
 ### minRegistrationTime
 Minimum registration time for oracles.
 
+*This is to prevent spamming the registry mechanism.*
+
+*If the oracle wants to unregister, they have to wait at least this time before doing so.*
+
 
 ```solidity
 uint256 public minRegistrationTime;
@@ -51,7 +55,7 @@ Registered times per oracle.
 
 
 ```solidity
-mapping(address oracle => uint256 registerTime) public registrationTimes;
+mapping(address oracle => mapping(LLMOracleKind => uint256 registeredTime)) public registrationTimes;
 ```
 
 
@@ -215,11 +219,11 @@ Insufficient stake amount during registration.
 error InsufficientFunds();
 ```
 
-### InvalidUnregistering
+### TooEarlyToUnregister
 Minimum waiting time has not passed for unregistering.
 
 
 ```solidity
-error InvalidUnregistering(uint256 minTimeToWait);
+error TooEarlyToUnregister(uint256 minTimeToWait);
 ```
 

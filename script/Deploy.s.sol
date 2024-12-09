@@ -3,10 +3,10 @@ pragma solidity ^0.8.20;
 
 import {Script} from "forge-std/Script.sol";
 import {HelperConfig} from "./HelperConfig.s.sol";
-import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 import {LLMOracleRegistry} from "../src/LLMOracleRegistry.sol";
 import {LLMOracleCoordinator, LLMOracleTaskParameters} from "../src/LLMOracleCoordinator.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 contract Deploy is Script {
@@ -99,7 +99,8 @@ contract Deploy is Script {
             '    "implAddr": "',
             Strings.toHexString(uint256(uint160(address(coordinatorImplementation))), 20),
             '"',
-            "  }"
+            "  }",
+            "}"
         );
 
         vm.writeJson(contracts, path);
