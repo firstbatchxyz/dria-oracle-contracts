@@ -25,8 +25,8 @@ abstract contract Whitelist is OwnableUpgradeable {
                                  STORAGE
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice To keep track of whitelisted addresses.
-    mapping(address => bool) public whitelisted;
+    /// @notice Indicates whether an address is whitelisted.
+    mapping(address => bool) public isWhitelisted;
 
     /*//////////////////////////////////////////////////////////////
                                   LOGIC
@@ -36,8 +36,8 @@ abstract contract Whitelist is OwnableUpgradeable {
     /// @param accounts The list of addresses to be added to the whitelist.
     function addToWhitelist(address[] memory accounts) external onlyOwner {
         for (uint256 i = 0; i < accounts.length; i++) {
-            if (!whitelisted[accounts[i]]) {
-                whitelisted[accounts[i]] = true;
+            if (!isWhitelisted[accounts[i]]) {
+                isWhitelisted[accounts[i]] = true;
                 emit AddedToWhitelist(accounts[i]);
             }
         }
@@ -46,8 +46,8 @@ abstract contract Whitelist is OwnableUpgradeable {
     /// @notice Remove validator from whitelist
     /// @param account The address to be removed from the whitelist.
     function removeFromWhitelist(address account) public onlyOwner {
-        if (whitelisted[account]) {
-            whitelisted[account] = false;
+        if (isWhitelisted[account]) {
+            isWhitelisted[account] = false;
             emit RemovedFromWhitelist(account);
         }
     }

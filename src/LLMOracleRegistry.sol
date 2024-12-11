@@ -107,7 +107,7 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
     /// @param kind The kind of Oracle to unregister.
     function register(LLMOracleKind kind) public {
         if (kind == LLMOracleKind.Validator) {
-            if (!whitelisted[msg.sender]) {
+            if (!isWhitelisted[msg.sender]) {
                 revert NotWhitelisted(msg.sender);
             }
         }
@@ -145,8 +145,8 @@ contract LLMOracleRegistry is Whitelist, UUPSUpgradeable {
         }
 
         // remove validator from whitelist
-        if (kind == LLMOracleKind.Validator && whitelisted[msg.sender]) {
-            whitelisted[msg.sender] = false;
+        if (kind == LLMOracleKind.Validator && isWhitelisted[msg.sender]) {
+            isWhitelisted[msg.sender] = false;
         }
 
         // enough time has not passed to unregister

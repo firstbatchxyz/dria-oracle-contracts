@@ -33,9 +33,9 @@ abstract contract LLMOracleManager is OwnableUpgradeable {
     uint64 public generationDeviationFactor;
 
     /// @notice Minimums for oracle parameters.
-    LLMOracleTaskParameters minimumParameters;
+    LLMOracleTaskParameters public minimumParameters;
     /// @notice Maximums for oracle parameters.
-    LLMOracleTaskParameters maximumParameters;
+    LLMOracleTaskParameters public maximumParameters;
 
     /// @notice The minimum score for a generation.
     uint256 public minScore;
@@ -70,6 +70,7 @@ abstract contract LLMOracleManager is OwnableUpgradeable {
 
     /// @notice Modifier to check if the given parameters are within the allowed range.
     modifier onlyValidParameters(LLMOracleTaskParameters calldata parameters) {
+        // difficulty checks
         if (
             parameters.difficulty < minimumParameters.difficulty || parameters.difficulty > maximumParameters.difficulty
         ) {
@@ -78,6 +79,7 @@ abstract contract LLMOracleManager is OwnableUpgradeable {
             );
         }
 
+        // numGeneration checks
         if (
             parameters.numGenerations < minimumParameters.numGenerations
                 || parameters.numGenerations > maximumParameters.numGenerations
@@ -87,6 +89,7 @@ abstract contract LLMOracleManager is OwnableUpgradeable {
             );
         }
 
+        // numValidation checks
         if (
             parameters.numValidations < minimumParameters.numValidations
                 || parameters.numValidations > maximumParameters.numValidations
@@ -95,6 +98,10 @@ abstract contract LLMOracleManager is OwnableUpgradeable {
                 parameters.numValidations, minimumParameters.numValidations, maximumParameters.numValidations
             );
         }
+
+        // if validations are enabled, numGenerations must be at least 2
+        // otherwise there is no point in having validations, the single
+        // generation will have the highest score anyways
         if (parameters.numValidations != 0 && parameters.numGenerations < 2) {
             revert InvalidParameterRange(parameters.numGenerations, 2, maximumParameters.numGenerations);
         }
