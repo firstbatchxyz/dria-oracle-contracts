@@ -176,7 +176,7 @@ contract LLMOracleCoordinatorTest is Helper {
         // remove validator from whitelist before trying to validate
         vm.prank(dria);
         oracleRegistry.removeFromWhitelist(validators[0]);
-        assertFalse(oracleRegistry.whitelisted(validators[0]));
+        assertFalse(oracleRegistry.isWhitelisted(validators[0]));
 
         // try to validate without being whitelisted
         uint256 valNonce = mineNonce(validators[0], 1);
@@ -264,7 +264,7 @@ contract LLMOracleCoordinatorTest is Helper {
     {
         vm.prank(dria);
         oracleRegistry.addToWhitelist(generators);
-        assertTrue(oracleRegistry.whitelisted(generators[0]));
+        assertTrue(oracleRegistry.isWhitelisted(generators[0]));
 
         // register generators[0] as a validator as well
         vm.prank(generators[0]);

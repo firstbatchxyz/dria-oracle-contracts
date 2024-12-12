@@ -88,7 +88,7 @@ contract LLMOracleRegistryTest is Helper {
     function test_RemoveFromWhitelist() external deployment fund registerOracle(LLMOracleKind.Validator) {
         vm.prank(dria);
         oracleRegistry.removeFromWhitelist(validators[1]);
-        vm.assertFalse(oracleRegistry.whitelisted(validators[1]));
+        vm.assertFalse(oracleRegistry.isWhitelisted(validators[1]));
     }
 
     /// @notice Registry has not approved by oracle

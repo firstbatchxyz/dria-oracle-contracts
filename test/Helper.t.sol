@@ -76,7 +76,7 @@ abstract contract Helper is Test {
         oracleRegistry.addToWhitelist(validators);
 
         for (uint256 i; i < validators.length; i++) {
-            vm.assertTrue(oracleRegistry.whitelisted(validators[i]));
+            vm.assertTrue(oracleRegistry.isWhitelisted(validators[i]));
         }
         _;
     }
@@ -104,7 +104,7 @@ abstract contract Helper is Test {
         oracleRegistry.addToWhitelist(validators);
 
         for (uint256 i = 0; i < validators.length; i++) {
-            assertTrue(oracleRegistry.whitelisted(validators[i]));
+            assertTrue(oracleRegistry.isWhitelisted(validators[i]));
             // approve the validatorStakeAmount for the validator
             vm.startPrank(validators[i]);
             token.approve(address(oracleRegistry), stakes.validatorStakeAmount);
