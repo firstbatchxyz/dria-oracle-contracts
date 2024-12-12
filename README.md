@@ -43,6 +43,7 @@ Create keystores for deployment. [See more for keystores](https://eips.ethereum.
 ```sh
 cast wallet import <FILE_NAME_OF_YOUR_KEYSTORE> --interactive
 ```
+
 You can see your wallets with:
 
 ```sh
@@ -75,18 +76,17 @@ Deploy the contracts with:
 ```sh
 forge script ./script/Deploy.s.sol:Deploy --rpc-url <RPC_URL> --account <FILE_NAME_OF_YOUR_KEYSTORE> --sender <DEPLOYER_PUBLIC_KEY> --broadcast
 ```
+
 or for instant verification use:
 
 ```sh
 forge script ./script/Deploy.s.sol:Deploy --rpc-url <RPC_URL> --account <FILE_NAME_OF_YOUR_KEYSTORE> --sender <DEPLOYER_PUBLIC_KEY> --broadcast --verify --verifier <etherscan|blockscout|sourcify> --verifier-url <VERIFIER_URL>
 ```
 
-> [!NOTE]
-> `<VERIFIER_URL>` should be expolorer's homepage url. Forge reads your `<ETHERSCAN_API_KEY>` from .env file so you don't need to add this at the end of `<VERIFIER_URL>`.
+> [!NOTE] > `<VERIFIER_URL>` should be expolorer's homepage url. Forge reads your `<ETHERSCAN_API_KEY>` from .env file so you don't need to add this at the end of `<VERIFIER_URL>`.
 >
-> e.g. 
+> e.g.
 > `https://base-sepolia.blockscout.com/api/` for `Base Sepolia Network`
->
 
 You can see deployed contract addresses under the `deployment/<chainid>.json`
 
@@ -105,6 +105,7 @@ Check coverages with:
 ```sh
 forge clean && bash coverage.sh
 ```
+
 or to see summarized coverages on terminal:
 
 ```sh

@@ -101,8 +101,8 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         _;
     }
 
-    modifier isWhiteListed(address account) {
-        if (!registry.whitelisted(account)) {
+    modifier onlyWhitelisted(address account) {
+        if (!registry.isWhitelisted(account)) {
             revert Whitelist.NotWhitelisted(account);
         }
         _;
@@ -283,7 +283,7 @@ contract LLMOracleCoordinator is LLMOracleTask, LLMOracleManager, UUPSUpgradeabl
         public
         onlyRegistered(LLMOracleKind.Validator)
         onlyAtStatus(taskId, TaskStatus.PendingValidation)
-        isWhiteListed(msg.sender)
+        onlyWhitelisted(msg.sender)
     {
         TaskRequest storage task = requests[taskId];
 
