@@ -99,12 +99,6 @@ abstract contract LLMOracleManager is OwnableUpgradeable {
             );
         }
 
-        // if validations are enabled, numGenerations must be at least 2
-        // otherwise there is no point in having validations, the single
-        // generation will have the highest score anyways
-        if (parameters.numValidations != 0 && parameters.numGenerations < 2) {
-            revert InvalidParameterRange(parameters.numGenerations, 2, maximumParameters.numGenerations);
-        }
         _;
     }
 
