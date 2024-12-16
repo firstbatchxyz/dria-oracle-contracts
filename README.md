@@ -7,7 +7,7 @@ LLM Oracle is a **Decentralized Protocol** for **executing AI tasks on-chain**. 
 Compile the contracts with:
 
 ```sh
-forge build
+forge clean && forge build
 ```
 
 > [!NOTE]
@@ -19,13 +19,13 @@ forge build
 Run tests on local:
 
 ```sh
-forge test --force
+forge clean && forge test
 ```
 
 or on any other evm chain:
 
 ```sh
-forge test --rpc-url <RPC_URL>
+forge clean && forge test --rpc-url <RPC_URL>
 ```
 
 ## Deployment
@@ -43,7 +43,6 @@ Create keystores for deployment. [See more for keystores](https://eips.ethereum.
 ```sh
 cast wallet import <FILE_NAME_OF_YOUR_KEYSTORE> --interactive
 ```
-
 You can see your wallets with:
 
 ```sh
@@ -56,37 +55,30 @@ cast wallet list
 > You HAVE to type your password on the terminal to be able to use your keys. (e.g when deploying a contract)
 
 **Step 3.**
-Enter your private key (associated with the public key you added to env file) and password on terminal. You'll see your public key on terminal.
+Enter your private key (associated with your address) and password on terminal. You'll see your address on terminal.
 
 > [!NOTE]
 >
-> If you want to deploy contracts on localhost please provide local public key for the command above.
+> If you want to deploy contracts on localhost please provide local address for the command above.
 
-**Step 4.** Required only for local deployment.
-
-Start a local node with:
-
-```sh
-anvil
-```
-
-**Step 5.**
-Deploy the contracts with:
+**Step 4.**
+Deploy the contract with:
 
 ```sh
-forge script ./script/Deploy.s.sol:Deploy --rpc-url <RPC_URL> --account <FILE_NAME_OF_YOUR_KEYSTORE> --sender <DEPLOYER_PUBLIC_KEY> --broadcast
+forge clean && forge script ./script/Deploy.s.sol:Deploy<CONTRACT_NAME> --rpc-url <RPC_URL> --account <FILE_NAME_OF_YOUR_KEYSTORE> --sender <DEPLOYER_ADDRESS> --broadcast
 ```
-
 or for instant verification use:
 
 ```sh
-forge script ./script/Deploy.s.sol:Deploy --rpc-url <RPC_URL> --account <FILE_NAME_OF_YOUR_KEYSTORE> --sender <DEPLOYER_PUBLIC_KEY> --broadcast --verify --verifier <etherscan|blockscout|sourcify> --verifier-url <VERIFIER_URL>
+forge clean && forge script ./script/Deploy.s.sol:Deploy<CONTRACT_NAME> --rpc-url <RPC_URL> --account <FILE_NAME_OF_YOUR_KEYSTORE> --sender <DEPLOYER_ADDRESS> --broadcast --verify --verifier <etherscan|blockscout|sourcify> --verifier-url <VERIFIER_URL>
 ```
 
-> [!NOTE] > `<VERIFIER_URL>` should be expolorer's homepage url. Forge reads your `<ETHERSCAN_API_KEY>` from .env file so you don't need to add this at the end of `<VERIFIER_URL>`.
+> [!NOTE]
+> `<VERIFIER_URL>` should be expolorer's homepage url. Forge reads your `<ETHERSCAN_API_KEY>` from .env file so you don't need to add this at the end of `<VERIFIER_URL>`.
 >
-> e.g.
+> e.g. 
 > `https://base-sepolia.blockscout.com/api/` for `Base Sepolia Network`
+>
 
 You can see deployed contract addresses under the `deployment/<chainid>.json`
 
@@ -105,7 +97,6 @@ Check coverages with:
 ```sh
 forge clean && bash coverage.sh
 ```
-
 or to see summarized coverages on terminal:
 
 ```sh
