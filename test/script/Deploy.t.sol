@@ -42,7 +42,10 @@ contract DeployTest is Test {
 
         require(llmOracleRegistryImpl == expectedRegistryImpl, "LLMOracleRegistry implementation mismatch");
         require(llmOracleCoordinatorImpl == expectedCoordinatorImpl, "LLMOracleCoordinator implementation mismatch");
-        require(address(LLMOracleCoordinator(llmOracleCoordinatorProxy).registry()) == llmOracleRegistryProxy, "LLMOracleCoordinator registry mismatch");
+        require(
+            address(LLMOracleCoordinator(llmOracleCoordinatorProxy).registry()) == llmOracleRegistryProxy,
+            "LLMOracleCoordinator registry mismatch"
+        );
         _;
     }
 

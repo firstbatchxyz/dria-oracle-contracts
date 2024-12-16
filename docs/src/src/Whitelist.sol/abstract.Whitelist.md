@@ -1,17 +1,17 @@
 # Whitelist
-[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/cdb7cd04715c2a34800fff701d86f15ce85acfe1/src/Whitelist.sol)
+[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/609653a954d5da8f6a2fba22755e9328ec77967f/src/Whitelist.sol)
 
 **Inherits:**
 OwnableUpgradeable
 
 
 ## State Variables
-### whitelisted
-To keep track of whitelisted addresses.
+### isWhitelisted
+Indicates whether an address is whitelisted.
 
 
 ```solidity
-mapping(address => bool) public whitelisted;
+mapping(address => bool) public isWhitelisted;
 ```
 
 
