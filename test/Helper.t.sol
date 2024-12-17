@@ -10,15 +10,8 @@ import {LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 import {Stakes, Fees} from "../script/HelperConfig.s.sol";
 import {WETH9} from "./WETH9.sol";
 
-/// @notice CREATED TO REDUCE CODE DUPLICATION IN TESTS
+/// @notice CREATED TO PREVENT CODE DUPLICATION IN TESTS
 abstract contract Helper is Test {
-    /*//////////////////////////////////////////////////////////////
-                             ERRORS
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice The given nonce is not a valid proof-of-work.
-    error InvalidNonceFromHelperTest(uint256 taskId, uint256 nonce, uint256 computedNonce, address caller);
-
     /*//////////////////////////////////////////////////////////////
                              STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -135,8 +128,7 @@ abstract contract Helper is Test {
 
     /// @notice Check generator and validator allowances before and after function execution
     /// @dev Used only for NON-REVERTED functions in coordinator tests
-    /// @dev request must be made in the function that uses this modifier
-
+    /// @dev Request must be made in the function that uses this modifier
     modifier checkAllowances() {
         uint256[] memory generatorAllowancesBefore = new uint256[](oracleParameters.numGenerations);
         uint256[] memory validatorAllowancesBefore = new uint256[](oracleParameters.numValidations);
@@ -232,7 +224,7 @@ abstract contract Helper is Test {
         return nonce;
     }
 
-    /// @notice Respond to a task
+    /// @notice Responds to task
     /// @param responder The responder address
     /// @param output The output data
     /// @param taskId The task id
@@ -242,9 +234,9 @@ abstract contract Helper is Test {
         oracleCoordinator.respond(taskId, nonce, output, metadata);
     }
 
-    /// @notice Validate a task
-    /// @param validator The validator address
-    /// @param taskId The task id
+    /// @notice Validates a task
+    /// @param validator Validator address
+    /// @param taskId Task id
     function safeValidate(address validator, uint256 taskId) internal {
         uint256 nonce = mineNonce(validator, taskId);
         vm.prank(validator);

@@ -57,8 +57,14 @@ contract LLMOracleCoordinatorTest is Helper {
     }
 
     modifier fund() {
-        // deploy weth
+        // deploy WETH9
         token = new WETH9();
+        bytes memory wethCode = address(token).code;
+        address targetAddr = 0x4200000000000000000000000000000000000006;
+        // sets the bytecode of the target address to the WETH9 contract
+        vm.etch(targetAddr, wethCode);
+        token = WETH9(payable(targetAddr));
+        assertEq(address(token), targetAddr);
 
         // fund dria & requester
         deal(address(token), dria, 1 ether);

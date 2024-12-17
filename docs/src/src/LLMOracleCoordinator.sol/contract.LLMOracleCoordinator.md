@@ -1,5 +1,5 @@
 # LLMOracleCoordinator
-[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/cdb7cd04715c2a34800fff701d86f15ce85acfe1/src/LLMOracleCoordinator.sol)
+[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/609653a954d5da8f6a2fba22755e9328ec77967f/src/LLMOracleCoordinator.sol)
 
 **Inherits:**
 [LLMOracleTask](/src/LLMOracleTask.sol/interface.LLMOracleTask.md), [LLMOracleManager](/src/LLMOracleManager.sol/abstract.LLMOracleManager.md), UUPSUpgradeable
@@ -94,11 +94,11 @@ Reverts if the task status is not `status`.
 modifier onlyAtStatus(uint256 taskId, TaskStatus status);
 ```
 
-### isWhiteListed
+### onlyWhitelisted
 
 
 ```solidity
-modifier isWhiteListed(address account);
+modifier onlyWhitelisted(address account);
 ```
 
 ### constructor
@@ -237,7 +237,7 @@ function validate(uint256 taskId, uint256 nonce, uint256[] calldata scores, byte
     public
     onlyRegistered(LLMOracleKind.Validator)
     onlyAtStatus(taskId, TaskStatus.PendingValidation)
-    isWhiteListed(msg.sender);
+    onlyWhitelisted(msg.sender);
 ```
 **Parameters**
 
