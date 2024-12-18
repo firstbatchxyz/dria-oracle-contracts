@@ -75,7 +75,10 @@ forge update
 
 ### Setup
 
-To be able to use our contracts, we need an [Ethereum Wallet](#create-wallet), and an [RPC endpoint](#prepare-rpc-endpoint).
+To be able to deploy & use our contracts, we need two things:
+
+- [Ethereum Wallet](#create-wallet)
+- [RPC endpoint](#prepare-rpc-endpoint)
 
 ### Create Wallet
 
@@ -134,18 +137,23 @@ forge clean && forge script ./script/Deploy.s.sol:Deploy<CONTRACT_NAME> \
 You can verify an existing contract with:
 
 ```sh
-forge verify-contract <CONTRACT_ADDRESS> src/<CONTRACT_NAME>.sol:<CONTRACT_NAME> \
+forge verify-contract <CONTRACT_ADDRESS> ./src/<CONTRACT_NAME>.sol:<CONTRACT_NAME> \
 --verifier blockscout \
 --verifier-url <VERIFIER_URL>
 ```
 
-Note that the `--verifier-url` value should be the target explorer's homepage URL. Foundry will read your `ETHERSCAN_API_KEY` from environment already, so this does not have to be within your URL.
+Note that the `--verifier-url` value should be the target explorer's homepage URL. Some example URLs are:
 
-`https://base-sepolia.blockscout.com/api/` for `Base Sepolia Network`
+- `https://base.blockscout.com/api/` for Base (Mainnet)
+- `https://base-sepolia.blockscout.com/api/` for Base Sepolia (Testnet)
 
 > [!NOTE]
 >
-> The `--verifier` can accept any of the following: `etherscan`, `blockscout`, `sourcify`; but we are using Blockscout most of the time.
+> URL should not contain the API key! Foundry will read your `ETHERSCAN_API_KEY` from environment.
+
+> [!NOTE]
+>
+> The `--verifier` can accept any of the following: `etherscan`, `blockscout`, `sourcify`, `oklink`. We are using Blockscout most of the time.
 
 ## Testing & Diagnostics
 
@@ -205,7 +213,7 @@ We have auto-generated MDBook documentations under the [`docs`](./docs) folder, 
 ```sh
 forge doc
 
-# servers the book as well
+# serves the book as well
 forge doc --serve
 ```
 
