@@ -191,10 +191,10 @@ forge clean && forge coverage --no-match-coverage "(test|mock|script)"
 Get storage layout with:
 
 ```sh
-forge clean && ./storage.sh
+./storage.sh
 ```
 
-You can see storage layouts under the storage directory.
+You can see storage layouts under the [`storage`](./storage/) directory.
 
 ### Gas Snapshot
 
