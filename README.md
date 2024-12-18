@@ -75,7 +75,7 @@ forge update
 
 ### Setup
 
-To be able to use our contracts, we need an RPC endpoint and a wallet.
+To be able to use our contracts, we need an [Ethereum Wallet](#create-wallet), and an [RPC endpoint](#prepare-rpc-endpoint).
 
 ### Create Wallet
 
@@ -103,11 +103,11 @@ To interact with the blockchain, we require an RPC endpoint. You can get one fro
 
 - [Alchemy](https://www.alchemy.com/)
 - [Infura](https://www.infura.io/)
-- [or see more here](https://www.alchemy.com/best/rpc-node-providers)
+- [(see more)](https://www.alchemy.com/best/rpc-node-providers)
 
 You will use this endpoint for the commands that interact with the blockchain, such as deploying and upgrading; or while doing fork tests.
 
-### Deploy Contract
+### Deploy & Verify Contract
 
 Deploy the contract with:
 
@@ -118,30 +118,34 @@ forge clean && forge script ./script/Deploy.s.sol:Deploy<CONTRACT_NAME> \
 --broadcast
 ```
 
-or for instant verification use:
+You can see deployed contract addresses under the `deployment/<chainid>.json`
+
+You can verify the contract during deployment by adding the verification arguments as well:
 
 ```sh
 forge clean && forge script ./script/Deploy.s.sol:Deploy<CONTRACT_NAME> \
 --rpc-url <RPC_URL> \
 --account <WALLET_NAME> \
---sender <ADDRESS> --broadcast \
---verify --verifier <etherscan|blockscout|sourcify> --verifier-url <VERIFIER_URL>
+--broadcast \
+--verify --verifier blockscout \
+--verifier-url <VERIFIER_URL>
 ```
 
-> [!NOTE] > `<VERIFIER_URL>` should be expolorer's homepage url. Forge reads your `<ETHERSCAN_API_KEY>` from .env file so you don't need to add this at the end of `<VERIFIER_URL>`.
->
-> e.g.
-> `https://base-sepolia.blockscout.com/api/` for `Base Sepolia Network`
-
-You can see deployed contract addresses under the `deployment/<chainid>.json`
-
-## Verify Contract
-
-Verify contract manually with:
+You can verify an existing contract with:
 
 ```sh
-forge verify-contract <CONTRACT_ADDRESS> src/$<CONTRACT_NAME>.sol:<CONTRACT_NAME> --verifier <etherscan|blockscout|sourcify> --verifier-url <VERIFIER_URL>
+forge verify-contract <CONTRACT_ADDRESS> src/<CONTRACT_NAME>.sol:<CONTRACT_NAME> \
+--verifier blockscout \
+--verifier-url <VERIFIER_URL>
 ```
+
+Note that the `--verifier-url` value should be the target explorer's homepage URL. Foundry will read your `ETHERSCAN_API_KEY` from environment already, so this does not have to be within your URL.
+
+`https://base-sepolia.blockscout.com/api/` for `Base Sepolia Network`
+
+> [!NOTE]
+>
+> The `--verifier` can accept any of the following: `etherscan`, `blockscout`, `sourcify`; but we are using Blockscout most of the time.
 
 ## Testing & Diagnostics
 
@@ -160,28 +164,26 @@ or fork an existing chain and run the tests on it:
 forge clean && forge test --rpc-url <RPC_URL>
 ```
 
-### Coverage
+### Code Coverage
 
-Check coverages with:
+We have a script that generates the coverage information as an HTML page. This script requires [`lcov`](https://linux.die.net/man/1/lcov) and [`genhtml`](https://linux.die.net/man/1/genhtml) command line tools. To run, do:
 
 ```sh
-forge clean && bash coverage.sh
+forge clean && ./coverage.sh
 ```
 
-or to see summarized coverages on terminal:
+Alternatively, you can see a summarized text-only output as well:
 
 ```sh
 forge clean && forge coverage --no-match-coverage "(test|mock|script)"
 ```
-
-You can see coverages under the coverage directory.
 
 ### Storage Layout
 
 Get storage layout with:
 
 ```sh
-forge clean && bash storage.sh
+forge clean && ./storage.sh
 ```
 
 You can see storage layouts under the storage directory.
