@@ -1,4 +1,6 @@
 #!/bin/bash
+forge compile
+
 cp ./out/LLMOracleCoordinator.sol/LLMOracleCoordinator.json ./abis/LLMOracleCoordinator.json
 node ./abis/parseAbi.js ./abis/LLMOracleCoordinator.json
 
