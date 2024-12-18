@@ -200,16 +200,13 @@ You can see the snapshot `.gas-snapshot` file in the current directory.
 
 ## Documentation
 
-We have auto-generated documentation under the [`docs`](./docs) folder, generated with the following command:
+We have auto-generated MDBook documentations under the [`docs`](./docs) folder, generated with the following command:
 
 ```sh
 forge doc
-```
 
-We provide an MDBook template over it, which you can open via:
-
-```sh
-cd docs && mdbook serve --open
+# servers the book as well
+forge doc --serve
 ```
 
 ## License

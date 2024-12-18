@@ -1,5 +1,5 @@
 # LLMOracleTaskParameters
-[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/a0589a694000a1a1e8d0cf54f0527c1c8a33c301/src/LLMOracleTask.sol)
+[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/4083e0e4f3f5849460fbea5040ecc77651509d1c/src/LLMOracleTask.sol)
 
 Collection of oracle task-related parameters.
 
