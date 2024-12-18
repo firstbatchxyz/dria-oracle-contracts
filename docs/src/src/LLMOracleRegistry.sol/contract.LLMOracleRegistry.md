@@ -1,5 +1,5 @@
 # LLMOracleRegistry
-[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/609653a954d5da8f6a2fba22755e9328ec77967f/src/LLMOracleRegistry.sol)
+[Git Source](https://github.com/firstbatchxyz/dria-oracle-contracts/blob/4083e0e4f3f5849460fbea5040ecc77651509d1c/src/LLMOracleRegistry.sol)
 
 **Inherits:**
 [Whitelist](/src/Whitelist.sol/abstract.Whitelist.md), UUPSUpgradeable

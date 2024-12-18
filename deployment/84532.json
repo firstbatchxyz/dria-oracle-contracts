@@ -4,7 +4,7 @@
     "implAddr": "0x92d4407bbeb368f173ed02e1a4f4d62b0685c80a"
   },
   "LLMOracleCoordinator": {
-    "proxyAddr": "0xe0d187376ccd0ca9ca2d5bd1517e92585bbd2033",
-    "implAddr": "0x94feef756aa9f0a036b4bc566518b58390af7fc0"
+    "proxyAddr": "0x5fb1d1bde4b0d0a7b03aa3b23eb1ee0da1030253",
+    "implAddr": "0xff133f5b43571ccbc8bf88bb392160d132d0d374"
   }
 }

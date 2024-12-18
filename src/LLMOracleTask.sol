@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 /// @notice Collection of oracle task-related parameters.
 /// @dev Prevents stack-too-deep with tight-packing.
-/// TODO: use 256-bit tight-packing here
 struct LLMOracleTaskParameters {
     /// @notice Difficulty of the task.
     uint8 difficulty;
