@@ -2,4 +2,3 @@ forge-std/=lib/forge-std/src/
 @openzeppelin/contracts/=lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 @openzeppelin/foundry-upgrades/=lib/openzeppelin-foundry-upgrades/src/
-ds-test/=lib/openzeppelin-contracts-upgradeable/lib/forge-std/lib/ds-test/src/

@@ -2,10 +2,11 @@
 pragma solidity ^0.8.20;
 
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
-import {Helper} from "./Helper.t.sol";
 
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
-import {WETH9} from "./WETH9.sol";
+
+import {Helper} from "./contracts/Helper.sol";
+import {WETH9} from "./contracts/WETH9.sol";
 
 contract LLMOracleRegistryTest is Helper {
     uint256 totalStakeAmount;
@@ -13,7 +14,7 @@ contract LLMOracleRegistryTest is Helper {
 
     modifier deployment() {
         oracle = generators[0];
-        totalStakeAmount = stakes.generatorStakeAmount + stakes.validatorStakeAmount;
+        totalStakeAmount = stakes.generator + stakes.validator;
 
         // deploy WETH9
         token = new WETH9();
@@ -28,8 +29,7 @@ contract LLMOracleRegistryTest is Helper {
         address registryProxy = Upgrades.deployUUPSProxy(
             "LLMOracleRegistry.sol",
             abi.encodeCall(
-                LLMOracleRegistry.initialize,
-                (stakes.generatorStakeAmount, stakes.validatorStakeAmount, address(token), minRegistrationTime)
+                LLMOracleRegistry.initialize, (stakes.generator, stakes.validator, address(token), minRegistrationTime)
             )
         );
 
@@ -37,8 +37,8 @@ contract LLMOracleRegistryTest is Helper {
         oracleRegistry = LLMOracleRegistry(registryProxy);
         vm.stopPrank();
 
-        assertEq(oracleRegistry.generatorStakeAmount(), stakes.generatorStakeAmount);
-        assertEq(oracleRegistry.validatorStakeAmount(), stakes.validatorStakeAmount);
+        assertEq(oracleRegistry.generatorStakeAmount(), stakes.generator);
+        assertEq(oracleRegistry.validatorStakeAmount(), stakes.validator);
         assertEq(oracleRegistry.minRegistrationTime(), minRegistrationTime);
 
         assertEq(address(oracleRegistry.token()), address(token));
@@ -84,7 +84,7 @@ contract LLMOracleRegistryTest is Helper {
     function unregisterOracle(LLMOracleKind kind) internal {
         // simulate the oracle account
         vm.startPrank(oracle);
-        token.approve(address(oracleRegistry), stakes.generatorStakeAmount);
+        token.approve(address(oracleRegistry), stakes.generator);
         oracleRegistry.unregister(kind);
         vm.stopPrank();
 
@@ -134,7 +134,7 @@ contract LLMOracleRegistryTest is Helper {
         registerOracle(LLMOracleKind.Generator)
     {
         vm.startPrank(oracle);
-        token.approve(address(oracleRegistry), stakes.generatorStakeAmount);
+        token.approve(address(oracleRegistry), stakes.generator);
 
         vm.expectRevert(
             abi.encodeWithSelector(

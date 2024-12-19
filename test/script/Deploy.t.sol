@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
-import {HelperConfig} from "../../script/HelperConfig.s.sol";
+import {Helper} from "../../script/Helper.s.sol";
 
 import {DeployLLMOracleCoordinator, DeployLLMOracleRegistry} from "../../script/Deploy.s.sol";
 import {LLMOracleRegistry} from "../../src/LLMOracleRegistry.sol";

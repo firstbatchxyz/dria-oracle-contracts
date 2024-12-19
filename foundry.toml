@@ -6,11 +6,17 @@ test = 'test'
 script = 'script'
 cache_path = 'cache'
 
+optimizer = true
+
+# required by upgradability
+# see: https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
 ffi = true
 ast = true
 build_info = true
-optimizer = true
 extra_output = ["storageLayout"]
+
+# forces recompilation, required by Upgradable contracts
+force = true
 
 # fs permissions for deployment (false by default)
 fs_permissions = [

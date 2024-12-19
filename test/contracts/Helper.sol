@@ -4,14 +4,25 @@ pragma solidity ^0.8.20;
 import {Vm} from "forge-std/Vm.sol";
 import {Test} from "forge-std/Test.sol";
 
-import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
-import {LLMOracleCoordinator} from "../src/LLMOracleCoordinator.sol";
-import {LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
-import {Stakes, Fees} from "../script/HelperConfig.s.sol";
+import {LLMOracleRegistry, LLMOracleKind} from "../../src/LLMOracleRegistry.sol";
+import {LLMOracleCoordinator} from "../../src/LLMOracleCoordinator.sol";
+import {LLMOracleTaskParameters} from "../../src/LLMOracleTask.sol";
+
 import {WETH9} from "./WETH9.sol";
 
 /// @notice CREATED TO PREVENT CODE DUPLICATION IN TESTS
 abstract contract Helper is Test {
+    struct Stakes {
+        uint256 generator;
+        uint256 validator;
+    }
+
+    struct Fees {
+        uint256 platform;
+        uint256 generation;
+        uint256 validation;
+    }
+
     /*//////////////////////////////////////////////////////////////
                              STORAGE
     //////////////////////////////////////////////////////////////*/
@@ -53,8 +64,8 @@ abstract contract Helper is Test {
 
         oracleParameters = LLMOracleTaskParameters({difficulty: 1, numGenerations: 1, numValidations: 1});
 
-        stakes = Stakes({generatorStakeAmount: 0.01 ether, validatorStakeAmount: 0.01 ether});
-        fees = Fees({platformFee: 0.0001 ether, generationFee: 0.0002 ether, validationFee: 0.00003 ether});
+        stakes = Stakes({generator: 0.01 ether, validator: 0.01 ether});
+        fees = Fees({platform: 0.0001 ether, generation: 0.0002 ether, validation: 0.00003 ether});
 
         vm.label(dria, "Dria");
     }
@@ -80,7 +91,7 @@ abstract contract Helper is Test {
         for (uint256 i = 0; i < generators.length; i++) {
             // approve the generatorStakeAmount for the generator
             vm.startPrank(generators[i]);
-            token.approve(address(oracleRegistry), stakes.generatorStakeAmount + stakes.validatorStakeAmount);
+            token.approve(address(oracleRegistry), stakes.generator + stakes.validator);
 
             // register the generator oracle
             oracleRegistry.register(LLMOracleKind.Generator);
@@ -100,7 +111,7 @@ abstract contract Helper is Test {
             assertTrue(oracleRegistry.isWhitelisted(validators[i]));
             // approve the validatorStakeAmount for the validator
             vm.startPrank(validators[i]);
-            token.approve(address(oracleRegistry), stakes.validatorStakeAmount);
+            token.approve(address(oracleRegistry), stakes.validator);
 
             // register the validator oracle
             oracleRegistry.register(LLMOracleKind.Validator);
@@ -119,10 +130,6 @@ abstract contract Helper is Test {
         oracleParameters.difficulty = _difficulty;
         oracleParameters.numGenerations = _numGenerations;
         oracleParameters.numValidations = _numValidations;
-
-        assertEq(oracleParameters.difficulty, _difficulty);
-        assertEq(oracleParameters.numGenerations, _numGenerations);
-        assertEq(oracleParameters.numValidations, _numValidations);
         _;
     }
 

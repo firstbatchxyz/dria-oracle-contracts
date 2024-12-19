@@ -2,13 +2,14 @@
 pragma solidity ^0.8.20;
 
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
-import {Helper} from "./Helper.t.sol";
 
 import {LLMOracleTask, LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
 import {LLMOracleCoordinator} from "../src/LLMOracleCoordinator.sol";
 import {Whitelist} from "../src/Whitelist.sol";
-import {WETH9} from "./WETH9.sol";
+
+import {Helper} from "./contracts/Helper.sol";
+import {WETH9} from "./contracts/WETH9.sol";
 
 contract LLMOracleCoordinatorTest is Helper {
     address dummy = vm.addr(20);
@@ -20,8 +21,7 @@ contract LLMOracleCoordinatorTest is Helper {
         address registryProxy = Upgrades.deployUUPSProxy(
             "LLMOracleRegistry.sol",
             abi.encodeCall(
-                LLMOracleRegistry.initialize,
-                (stakes.generatorStakeAmount, stakes.validatorStakeAmount, address(token), minRegistrationTime)
+                LLMOracleRegistry.initialize, (stakes.generator, stakes.validator, address(token), minRegistrationTime)
             )
         );
 
@@ -36,9 +36,9 @@ contract LLMOracleCoordinatorTest is Helper {
                 (
                     address(oracleRegistry),
                     address(token),
-                    fees.platformFee,
-                    fees.generationFee,
-                    fees.validationFee,
+                    fees.platform,
+                    fees.generation,
+                    fees.validation,
                     minScore,
                     maxScore
                 )
@@ -72,12 +72,12 @@ contract LLMOracleCoordinatorTest is Helper {
 
         // fund generators and validators
         for (uint256 i = 0; i < generators.length; i++) {
-            deal(address(token), generators[i], stakes.generatorStakeAmount + stakes.validatorStakeAmount);
-            assertEq(token.balanceOf(generators[i]), stakes.generatorStakeAmount + stakes.validatorStakeAmount);
+            deal(address(token), generators[i], stakes.generator + stakes.validator);
+            assertEq(token.balanceOf(generators[i]), stakes.generator + stakes.validator);
         }
         for (uint256 i = 0; i < validators.length; i++) {
-            deal(address(token), validators[i], stakes.validatorStakeAmount);
-            assertEq(token.balanceOf(validators[i]), stakes.validatorStakeAmount);
+            deal(address(token), validators[i], stakes.validator);
+            assertEq(token.balanceOf(validators[i]), stakes.validator);
         }
         _;
     }
@@ -255,7 +255,7 @@ contract LLMOracleCoordinatorTest is Helper {
         oracleCoordinator.withdrawPlatformFees();
         uint256 balanceAfter = token.balanceOf(dria);
 
-        assertEq(balanceAfter - balanceBefore, fees.platformFee);
+        assertEq(balanceAfter - balanceBefore, fees.platform);
     }
 
     /// @dev Oracle cannot validate if already participated as generator
@@ -345,6 +345,6 @@ contract LLMOracleCoordinatorTest is Helper {
         // get generator fee
         (,,,, uint256 genFee,,,,) = oracleCoordinator.requests(1);
         // only 1 generator doesn't get fee
-        assertEq(balanceAfter - balanceBefore, fees.platformFee + genFee);
+        assertEq(balanceAfter - balanceBefore, fees.platform + genFee);
     }
 }
