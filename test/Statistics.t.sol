@@ -111,7 +111,7 @@ contract StatisticsTest is Test {
         data[3] = number4;
 
         uint256 average = Statistics.avg(data);
-        console.log("Average: ", average);
+        // console.log("Average: ", average);
     }
 
     function testFuzz_Variance(uint8 number1, uint8 number2, uint8 number3, uint8 number4, uint8 number5)
@@ -132,7 +132,7 @@ contract StatisticsTest is Test {
         data[4] = number5;
 
         (uint256 variance,) = Statistics.variance(data);
-        console.log("Variance: ", variance);
+        // console.log("Variance: ", variance);
     }
 
     function testFuzz_StandardDeviation(
@@ -171,6 +171,6 @@ contract StatisticsTest is Test {
         data[9] = number10;
 
         (uint256 stddev,) = Statistics.stddev(data);
-        console.log("Standard Deviation: ", stddev);
+        // console.log("Standard Deviation: ", stddev);
     }
 }

@@ -158,6 +158,11 @@ To interact with the contracts, you need the contract ABIs. We store the ABIs un
 ./export-abis.sh
 ```
 
+### Upgrade Contract
+
+Upgrading an existing contract is done as per the instructions in [openzeppelin-foundry-upgrades](https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades) repository.
+The `--sender <ADDRESS>` field is required when deploying a contract,
+
 ## Testing & Diagnostics
 
 Run tests on local network:

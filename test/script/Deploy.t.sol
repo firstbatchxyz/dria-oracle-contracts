@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {UnsafeUpgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 import {Test} from "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {Helper} from "../../script/Helper.s.sol";
@@ -37,8 +37,8 @@ contract DeployTest is Test {
         require(llmOracleCoordinatorImpl != address(0), "LLMOracleCoordinator implementation not deployed");
 
         // check if implementations are correct
-        address expectedRegistryImpl = Upgrades.getImplementationAddress(llmOracleRegistryProxy);
-        address expectedCoordinatorImpl = Upgrades.getImplementationAddress(llmOracleCoordinatorProxy);
+        address expectedRegistryImpl = UnsafeUpgrades.getImplementationAddress(llmOracleRegistryProxy);
+        address expectedCoordinatorImpl = UnsafeUpgrades.getImplementationAddress(llmOracleCoordinatorProxy);
 
         require(llmOracleRegistryImpl == expectedRegistryImpl, "LLMOracleRegistry implementation mismatch");
         require(llmOracleCoordinatorImpl == expectedCoordinatorImpl, "LLMOracleCoordinator implementation mismatch");

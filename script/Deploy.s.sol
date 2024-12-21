@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {Upgrades, UnsafeUpgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Script} from "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
@@ -32,13 +32,13 @@ contract DeployLLMOracleRegistry is Script {
 
     function run() external returns (address proxy, address impl) {
         vm.startBroadcast();
-        (proxy, impl) = this.deployProxy();
+        (proxy, impl) = this.deploy();
         vm.stopBroadcast();
 
         helper.writeProxyAddresses("LLMOracleRegistry", proxy, impl);
     }
 
-    function deployProxy() external returns (address proxy, address impl) {
+    function deploy() external returns (address proxy, address impl) {
         proxy = Upgrades.deployUUPSProxy(
             "LLMOracleRegistry.sol",
             abi.encodeCall(
@@ -47,6 +47,15 @@ contract DeployLLMOracleRegistry is Script {
         );
 
         impl = Upgrades.getImplementationAddress(proxy);
+    }
+
+    function deployUnsafe(address impl) external returns (address proxy) {
+        proxy = UnsafeUpgrades.deployUUPSProxy(
+            impl,
+            abi.encodeCall(
+                LLMOracleRegistry.initialize, (stakes.generator, stakes.validator, token, minRegistrationTimeSec)
+            )
+        );
     }
 }
 
@@ -74,8 +83,6 @@ contract DeployLLMOracleCoordinator is Script {
     }
 
     function run() external returns (address proxy, address impl) {
-        helper = new Helper();
-
         // read registry address
         string memory deployments = helper.getDeploymentsJson();
         require(vm.keyExistsJson(deployments, "$.LLMOracleRegistry"), "Please deploy LLMOracleRegistry first");
@@ -85,18 +92,53 @@ contract DeployLLMOracleCoordinator is Script {
         require(registryImlp != address(0), "LLMOracleRegistry implementation address is invalid");
 
         vm.startBroadcast();
-        (proxy, impl) = this.deployProxy(registryProxy);
+        (proxy, impl) = this.deploy(registryProxy);
         vm.stopBroadcast();
 
         helper.writeProxyAddresses("LLMOracleCoordinator", proxy, impl);
     }
 
-    function deployProxy(address registryAddr) external returns (address proxy, address impl) {
+    function deploy(address registryAddr) external returns (address proxy, address impl) {
         proxy = Upgrades.deployUUPSProxy(
             "LLMOracleCoordinator.sol",
             abi.encodeCall(
                 LLMOracleCoordinator.initialize,
                 (registryAddr, token, fees.platform, fees.generation, fees.validation, minScore, maxScore)
+            )
+        );
+
+        impl = Upgrades.getImplementationAddress(proxy);
+    }
+}
+
+contract UpgradeLLMOracleRegistry is Script {
+    Helper public helper;
+    Stakes public stakes;
+    uint256 public minRegistrationTimeSec;
+    address public token;
+
+    constructor() {
+        helper = new Helper();
+
+        // parameters
+        minRegistrationTimeSec = 1 days;
+        stakes = Stakes({generator: 0.0001 ether, validator: 0.000001 ether});
+        token = address(0x4200000000000000000000000000000000000006); // WETH
+    }
+
+    function run() external returns (address proxy, address impl) {
+        vm.startBroadcast();
+        (proxy, impl) = this.deploy();
+        vm.stopBroadcast();
+
+        helper.writeProxyAddresses("LLMOracleRegistry", proxy, impl);
+    }
+
+    function deploy() external returns (address proxy, address impl) {
+        proxy = Upgrades.deployUUPSProxy(
+            "LLMOracleRegistry.sol",
+            abi.encodeCall(
+                LLMOracleRegistry.initialize, (stakes.generator, stakes.validator, token, minRegistrationTimeSec)
             )
         );
 
