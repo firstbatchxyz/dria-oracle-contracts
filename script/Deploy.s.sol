@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Upgrades, UnsafeUpgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {Upgrades, UnsafeUpgrades, Options} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Script} from "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
@@ -32,13 +32,13 @@ contract DeployLLMOracleRegistry is Script {
 
     function run() external returns (address proxy, address impl) {
         vm.startBroadcast();
-        (proxy, impl) = this.deploy();
+        (proxy, impl) = deploy();
         vm.stopBroadcast();
 
         helper.writeProxyAddresses("LLMOracleRegistry", proxy, impl);
     }
 
-    function deploy() external returns (address proxy, address impl) {
+    function deploy() public returns (address proxy, address impl) {
         proxy = Upgrades.deployUUPSProxy(
             "LLMOracleRegistry.sol",
             abi.encodeCall(
@@ -82,7 +82,7 @@ contract DeployLLMOracleCoordinator is Script {
         token = address(0x4200000000000000000000000000000000000006);
     }
 
-    function run() external returns (address proxy, address impl) {
+    function run() public {
         // read registry address
         string memory deployments = helper.getDeploymentsJson();
         require(vm.keyExistsJson(deployments, "$.LLMOracleRegistry"), "Please deploy LLMOracleRegistry first");
@@ -92,13 +92,13 @@ contract DeployLLMOracleCoordinator is Script {
         require(registryImlp != address(0), "LLMOracleRegistry implementation address is invalid");
 
         vm.startBroadcast();
-        (proxy, impl) = this.deploy(registryProxy);
+        (address proxy, address impl) = deploy(registryProxy);
         vm.stopBroadcast();
 
         helper.writeProxyAddresses("LLMOracleCoordinator", proxy, impl);
     }
 
-    function deploy(address registryAddr) external returns (address proxy, address impl) {
+    function deploy(address registryAddr) public returns (address proxy, address impl) {
         proxy = Upgrades.deployUUPSProxy(
             "LLMOracleCoordinator.sol",
             abi.encodeCall(
@@ -111,37 +111,50 @@ contract DeployLLMOracleCoordinator is Script {
     }
 }
 
-contract UpgradeLLMOracleRegistry is Script {
+contract UpgradeLLMOracleCoordinator is Script {
     Helper public helper;
-    Stakes public stakes;
-    uint256 public minRegistrationTimeSec;
-    address public token;
 
     constructor() {
         helper = new Helper();
-
-        // parameters
-        minRegistrationTimeSec = 1 days;
-        stakes = Stakes({generator: 0.0001 ether, validator: 0.000001 ether});
-        token = address(0x4200000000000000000000000000000000000006); // WETH
     }
 
-    function run() external returns (address proxy, address impl) {
+    function run() public returns (address impl) {
+        // todo: get proxy address
+        address proxy = 0xe3Ab5D57Feb189d7CD1685336FD638856391b9EB;
+
         vm.startBroadcast();
-        (proxy, impl) = this.deploy();
+        impl = upgrade(proxy);
+        vm.stopBroadcast();
+
+        helper.writeProxyAddresses("LLMOracleCoordinator", proxy, impl);
+    }
+
+    function upgrade(address proxy) public returns (address impl) {
+        Upgrades.upgradeProxy(proxy, "LLMOracleCoordinatorV2.sol", "");
+        impl = Upgrades.getImplementationAddress(proxy);
+    }
+}
+
+contract UpgradeLLMOracleRegistry is Script {
+    Helper public helper;
+
+    constructor() {
+        helper = new Helper();
+    }
+
+    function run() public returns (address impl) {
+        // todo: get proxy address
+        address proxy = 0x568Cfb5363E70Cde784f8603E2748e614c3420a7;
+
+        vm.startBroadcast();
+        impl = upgrade(proxy);
         vm.stopBroadcast();
 
         helper.writeProxyAddresses("LLMOracleRegistry", proxy, impl);
     }
 
-    function deploy() external returns (address proxy, address impl) {
-        proxy = Upgrades.deployUUPSProxy(
-            "LLMOracleRegistry.sol",
-            abi.encodeCall(
-                LLMOracleRegistry.initialize, (stakes.generator, stakes.validator, token, minRegistrationTimeSec)
-            )
-        );
-
+    function upgrade(address proxy) public returns (address impl) {
+        Upgrades.upgradeProxy(proxy, "LLMOracleRegistryV2.sol", "");
         impl = Upgrades.getImplementationAddress(proxy);
     }
 }
