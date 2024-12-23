@@ -116,7 +116,7 @@ forge script ./script/Deploy.s.sol:Deploy<CONTRACT_NAME> \
 --broadcast
 ```
 
-You can see deployed contract addresses under the `deployment/<chainid>.json`
+You can see deployed contract addresses under the [`deployments/<chainid>.json`](./deployments/)
 
 You can verify the contract during deployment by adding the verification arguments as well:
 
@@ -150,18 +150,32 @@ Note that the `--verifier-url` value should be the target explorer's homepage UR
 >
 > The `--verifier` can accept any of the following: `etherscan`, `blockscout`, `sourcify`, `oklink`. We are using Blockscout most of the time.
 
-### Generate ABIs
+After deployment, we need to take care of two things:
 
-To interact with the contracts, you need the contract ABIs. We store the ABIs under the [`abis`](./abis/) folder, and these can be generated using the following script:
+- **ABIs**: to interact with the contracts
+- **Artifacts**: required if we need to upgrade in future
+
+We have a post-deployment script that outputs these files under the [`deployments/abis`](./deployments/abis/) folder:
 
 ```sh
-./export-abis.sh
+# requires NodeJS
+./post-deploy.sh
 ```
 
 ### Upgrade Contract
 
 Upgrading an existing contract is done as per the instructions in [openzeppelin-foundry-upgrades](https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades) repository.
-The `--sender <ADDRESS>` field is required when deploying a contract,
+
+To upgrade, you must
+
+> [!NOTE]
+>
+> The `--sender <ADDRESS>` field is mandatory when deploying a contract, it can be obtained with:
+>
+> ```sh
+> # will prompt for password
+> cast wallet address --account <WALLET_NAME>
+> ```
 
 ## Testing & Diagnostics
 
@@ -225,7 +239,7 @@ forge fmt ./src/**/*.sol ./script/**/*.sol
 If you have solhint installed, you can lint all contracts with:
 
 ```sh
-solhint 'contracts/**/*.sol'
+solhint 'src/**/*.sol'
 ```
 
 ## Documentation

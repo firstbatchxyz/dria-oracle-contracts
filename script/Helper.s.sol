@@ -13,7 +13,7 @@ contract Helper is Script {
     /// @dev You are expect to use JSON-related commands with the returned string,
     /// see https://book.getfoundry.sh/cheatcodes/external for more.
     function getDeploymentsJson() external view returns (string memory) {
-        string memory dir = "deployment/";
+        string memory dir = "deployments/";
         string memory fileName = Strings.toString(block.chainid);
         string memory path = string.concat(dir, fileName, ".json");
 
@@ -22,7 +22,7 @@ contract Helper is Script {
 
     function writeProxyAddresses(string memory name, address _proxy, address _impl) external {
         // create a deployment file if not exist
-        string memory dir = "deployment/";
+        string memory dir = "deployments/";
         string memory fileName = Strings.toString(block.chainid);
         string memory path = string.concat(dir, fileName, ".json");
 
