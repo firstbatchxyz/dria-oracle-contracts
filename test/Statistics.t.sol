@@ -3,8 +3,9 @@ pragma solidity ^0.8.20;
 
 import {Vm} from "forge-std/Vm.sol";
 import {Test, console} from "forge-std/Test.sol";
-import {Statistics} from "../src/Statistics.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+import {Statistics} from "../src/Statistics.sol";
 
 contract StatisticsTest is Test {
     uint8 constant MAX_SCORE = 255; // max value of uint8
