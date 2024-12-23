@@ -208,16 +208,6 @@ Alternatively, you can see a summarized text-only output as well:
 forge coverage --no-match-coverage "(test|mock|script)"
 ```
 
-### Storage Layout
-
-You can print storage layouts for each contract using:
-
-```sh
-./storage.sh
-```
-
-The resulting Markdown files will be created under the [`storage`](./storage/) directory.
-
 ### Gas Snapshot
 
 You can examine the gas usage metrics using the command:

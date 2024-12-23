@@ -22,10 +22,11 @@ contract DeployTest is Test {
 
     function setUp() external {
         deployLLMOracleRegistry = new DeployLLMOracleRegistry();
-        (llmOracleRegistryProxy, llmOracleRegistryImpl) = deployLLMOracleRegistry.run();
+        (llmOracleRegistryProxy, llmOracleRegistryImpl) = deployLLMOracleRegistry.deploy();
 
         deployLLMOracleCoordinator = new DeployLLMOracleCoordinator();
-        (llmOracleCoordinatorProxy, llmOracleCoordinatorImpl) = deployLLMOracleCoordinator.run();
+        (llmOracleCoordinatorProxy, llmOracleCoordinatorImpl) =
+            deployLLMOracleCoordinator.deploy(llmOracleRegistryProxy);
     }
 
     modifier deployed() {

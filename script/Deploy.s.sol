@@ -30,15 +30,15 @@ contract DeployLLMOracleRegistry is Script {
         token = address(0x4200000000000000000000000000000000000006); // WETH
     }
 
-    function run() external returns (address proxy, address impl) {
+    function run() public {
         vm.startBroadcast();
-        (proxy, impl) = this.deploy();
+        (address proxy, address impl) = this.deploy();
         vm.stopBroadcast();
 
         helper.writeProxyAddresses("LLMOracleRegistry", proxy, impl);
     }
 
-    function deploy() external returns (address proxy, address impl) {
+    function deploy() public returns (address proxy, address impl) {
         proxy = Upgrades.deployUUPSProxy(
             "LLMOracleRegistry.sol",
             abi.encodeCall(
@@ -49,14 +49,14 @@ contract DeployLLMOracleRegistry is Script {
         impl = Upgrades.getImplementationAddress(proxy);
     }
 
-    function deployUnsafe(address impl) external returns (address proxy) {
-        proxy = UnsafeUpgrades.deployUUPSProxy(
-            impl,
-            abi.encodeCall(
-                LLMOracleRegistry.initialize, (stakes.generator, stakes.validator, token, minRegistrationTimeSec)
-            )
-        );
-    }
+    // function deployUnsafe(address impl) external returns (address proxy) {
+    //     proxy = UnsafeUpgrades.deployUUPSProxy(
+    //         impl,
+    //         abi.encodeCall(
+    //             LLMOracleRegistry.initialize, (stakes.generator, stakes.validator, token, minRegistrationTimeSec)
+    //         )
+    //     );
+    // }
 }
 
 contract DeployLLMOracleCoordinator is Script {
@@ -82,7 +82,7 @@ contract DeployLLMOracleCoordinator is Script {
         token = address(0x4200000000000000000000000000000000000006);
     }
 
-    function run() external returns (address proxy, address impl) {
+    function run() public {
         // read registry address
         string memory deployments = helper.getDeploymentsJson();
         require(vm.keyExistsJson(deployments, "$.LLMOracleRegistry"), "Please deploy LLMOracleRegistry first");
@@ -92,13 +92,13 @@ contract DeployLLMOracleCoordinator is Script {
         require(registryImlp != address(0), "LLMOracleRegistry implementation address is invalid");
 
         vm.startBroadcast();
-        (proxy, impl) = this.deploy(registryProxy);
+        (address proxy, address impl) = this.deploy(registryProxy);
         vm.stopBroadcast();
 
         helper.writeProxyAddresses("LLMOracleCoordinator", proxy, impl);
     }
 
-    function deploy(address registryAddr) external returns (address proxy, address impl) {
+    function deploy(address registryAddr) public returns (address proxy, address impl) {
         proxy = Upgrades.deployUUPSProxy(
             "LLMOracleCoordinator.sol",
             abi.encodeCall(
