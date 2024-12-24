@@ -14,7 +14,7 @@ contract Helper is Script {
     /// see https://book.getfoundry.sh/cheatcodes/external for more.
     function getDeploymentsJson() external view returns (string memory) {
         string memory chainId = Strings.toString(block.chainid);
-        string memory path = string.concat("deployments/", chainId, "addresses.json");
+        string memory path = string.concat("deployments/", chainId, ".json");
 
         return vm.readFile(path);
     }

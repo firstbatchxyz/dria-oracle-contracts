@@ -1,0 +1,10 @@
+{
+  "LLMOracleRegistry": {
+    "proxyAddr": "0x7645eef691ad9dc0f29b6abfc73cca4c8be44051",
+    "implAddr": "0xfc9bc11ef75575c8c048989a874356ce2d1fd290"
+  },
+  "LLMOracleCoordinator": {
+    "proxyAddr": "0x17b6d1eddcd5f9ca19bb2ffed2f3deb6bd74bd20",
+    "implAddr": "0x01547c5e13fd80ea6f3b7811acda51cf3989f832"
+  }
+}
