@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {UnsafeUpgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
 
@@ -26,8 +26,8 @@ contract LLMOracleRegistryTest is Helper {
         assertEq(address(token), targetAddr);
 
         vm.startPrank(dria);
-        address registryProxy = Upgrades.deployUUPSProxy(
-            "LLMOracleRegistry.sol",
+        address registryProxy = UnsafeUpgrades.deployUUPSProxy(
+            address(new LLMOracleRegistry()),
             abi.encodeCall(
                 LLMOracleRegistry.initialize, (stakes.generator, stakes.validator, address(token), minRegistrationTime)
             )
@@ -52,7 +52,7 @@ contract LLMOracleRegistryTest is Helper {
         _;
     }
 
-    /// @notice fund the oracle and dria
+    /// fund the oracle and dria
     modifier fund() {
         deal(address(token), dria, 1 ether);
         deal(address(token), oracle, totalStakeAmount);

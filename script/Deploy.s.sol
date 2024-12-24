@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Upgrades, UnsafeUpgrades, Options} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {Upgrades, Options} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Script} from "forge-std/Script.sol";
 import {Vm} from "forge-std/Vm.sol";
@@ -47,15 +47,6 @@ contract DeployLLMOracleRegistry is Script {
         );
 
         impl = Upgrades.getImplementationAddress(proxy);
-    }
-
-    function deployUnsafe(address impl) external returns (address proxy) {
-        proxy = UnsafeUpgrades.deployUUPSProxy(
-            impl,
-            abi.encodeCall(
-                LLMOracleRegistry.initialize, (stakes.generator, stakes.validator, token, minRegistrationTimeSec)
-            )
-        );
     }
 }
 

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import {Upgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {UnsafeUpgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
 
 import {LLMOracleTask, LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
@@ -18,19 +18,20 @@ contract LLMOracleCoordinatorTest is Helper {
 
     modifier deployment() {
         vm.startPrank(dria);
-        address registryProxy = Upgrades.deployUUPSProxy(
-            "LLMOracleRegistry.sol",
-            abi.encodeCall(
-                LLMOracleRegistry.initialize, (stakes.generator, stakes.validator, address(token), minRegistrationTime)
+
+        oracleRegistry = LLMOracleRegistry(
+            UnsafeUpgrades.deployUUPSProxy(
+                address(new LLMOracleRegistry()),
+                abi.encodeCall(
+                    LLMOracleRegistry.initialize,
+                    (stakes.generator, stakes.validator, address(token), minRegistrationTime)
+                )
             )
         );
 
-        // wrap proxy with the LLMOracleRegistry contract to use in tests easily
-        oracleRegistry = LLMOracleRegistry(registryProxy);
-
         // deploy coordinator contract
-        address coordinatorProxy = Upgrades.deployUUPSProxy(
-            "LLMOracleCoordinator.sol",
+        address coordinatorProxy = UnsafeUpgrades.deployUUPSProxy(
+            address(new LLMOracleCoordinator()),
             abi.encodeCall(
                 LLMOracleCoordinator.initialize,
                 (
