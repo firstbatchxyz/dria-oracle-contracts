@@ -218,7 +218,7 @@ forge coverage --no-match-coverage "(test|mock|script)"
 You can examine the gas usage metrics using the command:
 
 ```sh
-forge snapshot --snap ./test/.gas-snapshot
+FOUNDRY_PROFILE=test forge snapshot --snap ./test/.gas-snapshot
 ```
 
 You can see the snapshot `.gas-snapshot` file in the current directory.

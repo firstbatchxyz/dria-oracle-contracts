@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import {UnsafeUpgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
+import {console} from "forge-std/console.sol";
 
 import {LLMOracleTask, LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
@@ -259,7 +260,7 @@ contract LLMOracleCoordinatorTest is Helper {
         assertEq(balanceAfter - balanceBefore, fees.platform);
     }
 
-    /// @dev Oracle cannot validate if already participated as generator
+    /// @notice Oracle cannot validate if already participated as generator
     /// @dev 1 generation + 1 validation
     function test_ValidatorIsGenerator()
         external
@@ -291,8 +292,8 @@ contract LLMOracleCoordinatorTest is Helper {
         oracleCoordinator.validate(1, nonce, scores, metadata);
     }
 
-    // @notice Request with 4 generation + 1 validation
-    // @dev Not every generator gets fee
+    /// @notice Request with 4 generation + 1 validation
+    /// @dev Not every generator gets fee
     function test_WitValidation_NotEveryGeneratorGetFee()
         external
         fund
@@ -347,5 +348,47 @@ contract LLMOracleCoordinatorTest is Helper {
         (,,,, uint256 genFee,,,,) = oracleCoordinator.requests(1);
         // only 1 generator doesn't get fee
         assertEq(balanceAfter - balanceBefore, fees.platform + genFee);
+    }
+
+    /// @notice Request with 4 generation + 1 validation
+    /// @dev Not every generator gets fee
+    function test_WithSingleValidationAndGeneration()
+        external
+        fund
+        setOracleParameters(2, 1, 1)
+        deployment
+        registerOracles
+        safeRequest(requester, 1)
+        addValidatorsToWhitelist
+    {
+        uint256 balanceBefore = token.balanceOf(dria);
+
+        // get generator allowances before function execution & respond
+        uint256 generatorAllowancesBefore = token.allowance(address(oracleCoordinator), generators[0]);
+        console.log("BEFORE:", generatorAllowancesBefore);
+        safeRespond(generators[0], output, 1);
+
+        // validator validate with just one score
+        scores = [200];
+        safeValidate(validators[0], 1);
+
+        // check the task's status is Completed
+        (,,, LLMOracleTask.TaskStatus status, uint256 generatorFee,,,,) = oracleCoordinator.requests(1);
+        assertEq(uint8(status), uint8(LLMOracleTask.TaskStatus.Completed));
+
+        // check that fee is given
+        uint256 generatorAllowanceAfter = token.allowance(address(oracleCoordinator), generators[0]);
+        console.log("AFTER:", generatorAllowanceAfter);
+        assertEq(generatorAllowanceAfter - generatorAllowancesBefore, generatorFee);
+
+        // withdraw platform fees
+        vm.prank(dria);
+        oracleCoordinator.withdrawPlatformFees();
+
+        // get balance of dria after withdraw
+        uint256 balanceAfter = token.balanceOf(dria);
+
+        // should only have platform fee after withdrawing
+        assertEq(balanceAfter - balanceBefore, fees.platform);
     }
 }
