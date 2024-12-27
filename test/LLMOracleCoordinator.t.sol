@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import {UnsafeUpgrades} from "@openzeppelin/foundry-upgrades/Upgrades.sol";
-import {console} from "forge-std/console.sol";
 
 import {LLMOracleTask, LLMOracleTaskParameters} from "../src/LLMOracleTask.sol";
 import {LLMOracleRegistry, LLMOracleKind} from "../src/LLMOracleRegistry.sol";
@@ -365,7 +364,6 @@ contract LLMOracleCoordinatorTest is Helper {
 
         // get generator allowances before function execution & respond
         uint256 generatorAllowancesBefore = token.allowance(address(oracleCoordinator), generators[0]);
-        console.log("BEFORE:", generatorAllowancesBefore);
         safeRespond(generators[0], output, 1);
 
         // validator validate with just one score
@@ -378,7 +376,6 @@ contract LLMOracleCoordinatorTest is Helper {
 
         // check that fee is given
         uint256 generatorAllowanceAfter = token.allowance(address(oracleCoordinator), generators[0]);
-        console.log("AFTER:", generatorAllowanceAfter);
         assertEq(generatorAllowanceAfter - generatorAllowancesBefore, generatorFee);
 
         // withdraw platform fees
