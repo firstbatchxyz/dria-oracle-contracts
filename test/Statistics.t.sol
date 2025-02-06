@@ -112,7 +112,9 @@ contract StatisticsTest is Test {
         data[3] = number4;
 
         uint256 average = Statistics.avg(data);
-        // console.log("Average: ", average);
+
+        assert(average >= Math.min(Math.min(number1, number2), Math.min(number3, number4)) * 1 ether);
+        assert(average <= Math.max(Math.max(number1, number2), Math.max(number3, number4)) * 1 ether);
     }
 
     function testFuzz_Variance(uint8 number1, uint8 number2, uint8 number3, uint8 number4, uint8 number5)
@@ -133,45 +135,139 @@ contract StatisticsTest is Test {
         data[4] = number5;
 
         (uint256 variance,) = Statistics.variance(data);
-        // console.log("Variance: ", variance);
+
+        // variance be 0 if all numbers are equal
+        if (number1 == number2 && number2 == number3 && number3 == number4 && number4 == number5) {
+            assertEq(variance, 0);
+        }
+
+        // variance should be non-negative
+        assert(variance >= 0);
     }
 
-    function testFuzz_StandardDeviation(
-        uint8 number1,
-        uint8 number2,
-        uint8 number3,
-        uint8 number4,
-        uint8 number5,
-        uint8 number6,
-        uint8 number7,
-        uint8 number8,
-        uint8 number9,
-        uint8 number10
-    ) external pure {
-        vm.assume(number1 <= MAX_SCORE && number1 > MIN_SCORE);
-        vm.assume(number2 <= MAX_SCORE && number2 > MIN_SCORE);
-        vm.assume(number3 <= MAX_SCORE && number3 > MIN_SCORE);
-        vm.assume(number4 <= MAX_SCORE && number4 > MIN_SCORE);
-        vm.assume(number5 <= MAX_SCORE && number5 > MIN_SCORE);
-        vm.assume(number6 <= MAX_SCORE && number6 > MIN_SCORE);
-        vm.assume(number7 <= MAX_SCORE && number7 > MIN_SCORE);
-        vm.assume(number8 <= MAX_SCORE && number8 > MIN_SCORE);
-        vm.assume(number9 <= MAX_SCORE && number9 > MIN_SCORE);
-        vm.assume(number10 <= MAX_SCORE && number10 > MIN_SCORE);
+    function testFuzz_StandardDeviation(uint8 number1, uint8 number2, uint8 number3, uint8 number4, uint8 number5)
+        external
+        pure
+    {
+        vm.assume(number1 <= MAX_SCORE && number1 >= MIN_SCORE);
+        vm.assume(number2 <= MAX_SCORE && number2 >= MIN_SCORE);
+        vm.assume(number3 <= MAX_SCORE && number3 >= MIN_SCORE);
+        vm.assume(number4 <= MAX_SCORE && number4 >= MIN_SCORE);
+        vm.assume(number5 <= MAX_SCORE && number5 >= MIN_SCORE);
 
-        uint256[] memory data = new uint256[](10);
+        uint256[] memory data = new uint256[](5);
         data[0] = number1;
         data[1] = number2;
         data[2] = number3;
         data[3] = number4;
         data[4] = number5;
-        data[5] = number6;
-        data[6] = number7;
-        data[7] = number8;
-        data[8] = number9;
-        data[9] = number10;
 
         (uint256 stddev,) = Statistics.stddev(data);
-        // console.log("Standard Deviation: ", stddev);
+
+        // standard deviation should be 0 if all numbers are equal
+        if (number1 == number2 && number2 == number3 && number3 == number4 && number4 == number5) {
+            assertEq(stddev, 0);
+        }
+
+        // standard deviation should be non-negative
+        assert(stddev >= 0);
+    }
+
+    // Test for array bounds
+    function testFuzz_ArrayBounds(uint8 length) external pure {
+        // limit array size to prevent overflow and excessive gas costs
+        vm.assume(length > 0 && length <= 32);
+
+        uint256[] memory data = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            data[i] = MIN_SCORE; // use min to avoid overflow
+        }
+
+        uint256 avg = Statistics.avg(data);
+        assertEq(avg, MIN_SCORE * 1 ether);
+
+        (uint256 variance,) = Statistics.variance(data);
+        assertEq(variance, 0);
+    }
+
+    // Test invariance under translation
+    function testFuzz_TranslationInvariance(uint8 shift) external pure {
+        vm.assume(shift <= 50); // Ensure we don't overflow MAX_SCORE
+
+        uint256[] memory data10 = new uint256[](3);
+        uint256[] memory data20 = new uint256[](3);
+
+        // original data
+        data10[0] = 100;
+        data10[1] = 150;
+        data10[2] = 200;
+
+        // shifted data
+        data20[0] = 100 + shift;
+        data20[1] = 150 + shift;
+        data20[2] = 200 + shift;
+
+        (uint256 variance1,) = Statistics.variance(data10);
+        (uint256 variance2,) = Statistics.variance(data20);
+
+        // variance should be invariant under translation
+        assertApproxEqAbs(variance1, variance2, 1e15);
+    }
+
+    // Test that variance scales correctly when data is multiplied
+    function testFuzz_ScaleInvariance(uint8 length, uint8 scale) external pure {
+        vm.assume(length > 0 && length <= 32);
+        vm.assume(scale > 0 && scale <= 10);
+
+        uint256[] memory data = new uint256[](length);
+        uint256[] memory scaledData = new uint256[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            data[i] = bound(uint256(uint256(keccak256(abi.encode(i))) % MAX_SCORE), MIN_SCORE, MAX_SCORE / scale);
+            scaledData[i] = data[i] * scale;
+        }
+
+        (uint256 variance1,) = Statistics.variance(data);
+        (uint256 variance2,) = Statistics.variance(scaledData);
+
+        assertApproxEqAbs(variance2, variance1 * scale * scale, 1e15);
+    }
+
+    function testFuzz_OrderInvariance(uint8 length) external view {
+        vm.assume(length > 1 && length <= 32);
+
+        uint256[] memory data = new uint256[](length);
+        uint256[] memory shuffledData = new uint256[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            data[i] = bound(uint256(uint256(keccak256(abi.encode(i))) % MAX_SCORE), MIN_SCORE, MAX_SCORE);
+            shuffledData[i] = data[i];
+        }
+
+        // Shuffle
+        for (uint256 i = length - 1; i > 0; i--) {
+            uint256 j = uint256(keccak256(abi.encodePacked(block.timestamp, i))) % (i + 1);
+            (shuffledData[i], shuffledData[j]) = (shuffledData[j], shuffledData[i]);
+        }
+
+        uint256 avg1 = Statistics.avg(data);
+        uint256 avg2 = Statistics.avg(shuffledData);
+        (uint256 variance1,) = Statistics.variance(data);
+        (uint256 variance2,) = Statistics.variance(shuffledData);
+
+        assertEq(avg1, avg2);
+        assertEq(variance1, variance2);
+    }
+
+    function testFuzz_ExtremeValues(uint8 length) external pure {
+        vm.assume(length > 1 && length <= 32); // Must have at least 2 elements
+
+        uint256[] memory extremeData = new uint256[](length);
+        for (uint256 i = 0; i < length; i++) {
+            extremeData[i] = i % 2 == 0 ? MAX_SCORE : MIN_SCORE;
+        }
+
+        (uint256 variance,) = Statistics.variance(extremeData);
+        assert(variance > 0);
     }
 }
