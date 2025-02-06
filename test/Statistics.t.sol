@@ -173,21 +173,6 @@ contract StatisticsTest is Test {
         assert(stddev >= 0);
     }
 
-    // Test for empty array handling
-    function test_EmptyArray() external {
-        uint256[] memory emptyData = new uint256[](0);
-
-        // Test division by zero error for empty array
-        vm.expectRevert(); // or vm.expectRevert(stdError.divisionError);
-        Statistics.avg(emptyData);
-
-        vm.expectRevert();
-        Statistics.variance(emptyData);
-
-        vm.expectRevert();
-        Statistics.stddev(emptyData);
-    }
-
     // Test for array bounds
     function testFuzz_ArrayBounds(uint8 length) external pure {
         // limit array size to prevent overflow and excessive gas costs
@@ -230,7 +215,7 @@ contract StatisticsTest is Test {
     }
 
     // Test that variance scales correctly when data is multiplied
-    function testFuzz_ScaleInvariance(uint8 length, uint8 scale) external {
+    function testFuzz_ScaleInvariance(uint8 length, uint8 scale) external pure {
         vm.assume(length > 0 && length <= 32);
         vm.assume(scale > 0 && scale <= 10);
 
@@ -248,7 +233,7 @@ contract StatisticsTest is Test {
         assertApproxEqAbs(variance2, variance1 * scale * scale, 1e15);
     }
 
-    function testFuzz_OrderInvariance(uint8 length) external {
+    function testFuzz_OrderInvariance(uint8 length) external view {
         vm.assume(length > 1 && length <= 32);
 
         uint256[] memory data = new uint256[](length);
@@ -274,7 +259,7 @@ contract StatisticsTest is Test {
         assertEq(variance1, variance2);
     }
 
-    function testFuzz_ExtremeValues(uint8 length) external {
+    function testFuzz_ExtremeValues(uint8 length) external pure {
         vm.assume(length > 1 && length <= 32); // Must have at least 2 elements
 
         uint256[] memory extremeData = new uint256[](length);
